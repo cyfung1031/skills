@@ -1,0 +1,4 @@
+interface:
+  display_name: "Context Compressor"
+  short_description: "Reduce context and token usage"
+  default_prompt: "Use $context-compressor to keep this thread concise and avoid unnecessary context growth."
