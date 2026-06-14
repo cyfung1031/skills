@@ -5,7 +5,7 @@
 This package contains a **tool-agnostic AI Development Loop** for software projects. It defines a durable two-role workflow:
 
 - **R — Reviewer/Auditor** reviews specifications, plans, implementation, risks, and evidence.
-- **K — Implementer/Keeper** responds to R, updates specs, implements code in the real repository, validates changes, and records evidence.
+- **K — Implementer/Keeper** responds to R, performs whole-change impact scans, updates all directly affected specs/docs/examples/code/tests/harness artifacts in the real repository, validates changes, and records evidence.
 
 The package is designed for any comparable repository-editing coding assistant. Named tools are only adapter examples; the workflow itself does not depend on a vendor-specific command, directory, or UI feature.
 
@@ -155,7 +155,7 @@ None.
 
 ## Open Required Findings
 
-None yet; first R review must populate any blockers or required findings.
+None yet; first R review must populate any blockers, required findings, or unresolved K questions/objections.
 
 ## Completed Items
 
@@ -213,7 +213,7 @@ The examples demonstrate the workflow rather than a tool-specific transcript.
 
 ### How R Reviews Work
 
-R should:
+R must:
 
 - read the relevant specs, plans, code, tests, git history, and `.ai-dev-loop/` records,
 - identify gaps, contradictions, risks, missing evidence, and required follow-up,
@@ -225,7 +225,7 @@ R should:
 
 ### How K Responses Work
 
-K should:
+K must:
 
 - read R's latest review fully,
 - respond finding-by-finding,
@@ -238,7 +238,7 @@ K should:
 
 ### Context Notes
 
-`context/` should not be used for every small turn. It should be used when the loop is long, a milestone transitions to another phase, the next agent would otherwise need stale chat context, or the latest status cannot compactly explain the current state.
+Do not use `context/` for every small turn. Use it when the loop is long, a milestone transitions to another phase, the next agent would otherwise need stale chat context, or the latest status cannot compactly explain the current state.
 
 ### Decision Records
 
@@ -246,7 +246,7 @@ K should:
 
 ## Quality Gates
 
-Before R approval, the records should show:
+Before R approval, the records must show:
 
 - latest R/K files are referenced by `status.md`,
 - all required template sections are present,
@@ -334,40 +334,48 @@ mkdir -p .ai-dev-loop/{reviews,responses,context,decisions}
 
 Then ask your agent to start as R using the quick-start prompt above.
 
-## v1.3.3 Patch Notes
+## v1.4.0 Patch Notes
 
-- Added Open Required Findings carry-forward so unresolved R-required issues survive across role turns and cannot be bypassed by roadmap order.
-- Added code-doc-test consistency gates: K records doc/spec/example/test impact or a no-doc rationale; R verifies direct evidence before approval.
-- Added scope-change controls so K cannot mix unrelated refactors, dependency changes, cleanup, or formatting churn into an R finding fix.
-- Added drift-scan and practical failure-prevention validator safeguards.
+- Replaced backtracking-prone review/response block extraction with line-by-line parsing in `scripts/validate-ai-dev-loop-package.py`.
+- Normalized Markdown-decorated status option lists before vocabulary comparison.
+- Added local installer write-error handling for permissions, locked files, and OS file-handle failures.
+
+
+- Added explicit clarification/objection gates: K can ask R when requirements are unclear and can challenge questionable R findings with evidence and a proposed safe path.
+- Clarified that autonomous continuation does not override unresolved K clarification/objection gates; R must answer, revise, uphold with evidence, or accept risk before K continues implementation.
+- Clarified whole-change responsibility: R findings are required outcomes, not exhaustive K task lists. K must scan and fix directly related docs, examples, tests, validators, scripts, installer/package guidance, and status-template drift. This includes affected files that R did not explicitly list.
+- Kept Open Required Findings carry-forward so unresolved R-required issues survive across role turns and cannot be bypassed by roadmap order.
+- Kept code-doc-test consistency gates: K records doc/spec/example/test impact or a no-doc rationale; R verifies direct evidence before approval.
+- Kept scope-change controls so K cannot mix unrelated refactors, dependency changes, cleanup, or formatting churn into an R finding fix.
+- Updated whole-change impact scan and practical failure-prevention validator safeguards to cover clarification/objection gates plus related docs/examples/tests/validators/scripts/package drift.
 - Retained prior 1.3.x packaging fixes, including `REFERENCE.md` status-vocabulary validation.
 - Removed embedded pseudo-frontmatter block from `REFERENCE.md` body (cosmetic fix; was confusing to YAML-aware tooling).
 - Added `validate_reference_bullet_status_lists` validator check so future bold-header bullet lists in `REFERENCE.md` are verified against the canonical allowed sets.
 - Tightened version-consistency regex in validator to exclude dependency-pin comparators (`>=`, `<=`, `!=`, `==`, `~=`, `>`, `<`), avoiding false positives on non-version numeric strings.
 - Removed vendor-specific `/home/oai` entry from installer `BROAD_DIRS`; `Path.home()` already covers all user home directories.
 
-## v1.3.3 Maintenance Notes
+## v1.4.0 Maintenance Notes
 
 - Keeps the compact `SKILL.md` and optional `REFERENCE.md` structure.
 - Preserves durable R/K separation, evidence-first reviews, status synchronization, git discipline, and degraded-mode honesty.
-- Keeps conservative token-efficiency guidance while compressing `SKILL.md` to fit validation budgets.
+- Keeps conservative token-efficiency guidance while sizing `SKILL.md` budgets with modest maintenance headroom instead of near-zero slack.
 - Keeps provider-neutral byte, line, word, structure, status, template, and packaging checks.
 - Uses the documented clean root zip layout with no wrapper directory.
-- Keeps canonical R/K templates unchanged so existing records remain compatible.
-- Applies audit fixes: status vocabulary clarification, dry-run documentation, quickstart alignment, and `SKILL.md` size headroom.
+- Updates the canonical K template from `Remaining Questions` to `Clarifications or Objections`; existing older records remain readable, while new records use the v1.4.0 heading.
+- Applies workflow fixes for unclear requirements and justified K objections while preserving auditability, status synchronization, and `SKILL.md` size headroom.
 
 ## Version
 
-**Version**: 1.3.3
+**Version**: 1.4.0
 **Last Updated**: 2026-06-14
 
 
 ## Commit-hash timing
 
-A role record and `status.md` are often committed together, so `status.md` may not know the hash of the commit that introduces it. Use `pending current commit` inside that commit instead of inventing a hash; a later role may replace it with the actual hash when useful.
+A role record and `status.md` are often committed together, so `status.md` cannot know the hash of the commit that introduces it. Use `pending current commit` inside that commit instead of inventing a hash. A later role can replace it with the actual hash when useful. When reviewing historical turns, treat `pending current commit` inside a committed record as a valid, closed audit entry for that turn, not as missing evidence or an open finding.
 
 ## Git Bootstrap Default
 
 Before initializing git, the agent checks `git rev-parse --show-toplevel` to detect an existing repository, worktree, submodule, or parent repository. The skill allows `git init` only when that command fails, the current directory is confirmed as the intended project root, and the directory is not `$HOME`, `/`, `/mnt/data`, or another broad container/workspace parent. The agent must not push, configure remotes, or change external repository settings unless the user explicitly requests it.
 
-If git cannot be initialized or commits cannot be created, the agent records degraded mode in `status.md` and the current R/K record, lists changed paths, and does not proceed with code implementation beyond safe documentation/bootstrap work unless explicitly authorized.
+If git cannot be initialized or commits cannot be created, the agent records degraded mode in `status.md` and the current R/K record. It lists changed paths. It does not proceed with code implementation beyond safe documentation/bootstrap work unless explicitly authorized.

@@ -55,12 +55,16 @@ Changes requested. The skill needs explicit durable R/K record requirements, con
 - Status: Open
 - Type: Clarification
 - Location: Bootstrap, degraded mode, failure handling, and status ownership
-- Details: The skill should state what happens when git is missing, unrelated tests fail, or both roles could update status.
+- Details: The skill must state what happens when git is missing, unrelated tests fail, or both roles could update status.
 - Required action: Encode defaults directly in the skill and require limitations to be recorded as evidence.
 
 ## Clarifications Needed
 
 None. Apply safe autonomous defaults.
+
+## Clarification and Objection Responses
+
+None. No K question or objection was pending for this R turn.
 
 ## Approval Status
 

@@ -16,7 +16,7 @@ Added explicit bootstrap behavior, workspace conventions, git initialization def
 - Files changed: `SKILL.md`, `.ai-dev-loop/README.md`, `.ai-dev-loop/status.md`, `.ai-dev-loop/responses/0001-k-response.md`
 - Commands run: `git status --short`; `git branch --show-current`; `find .ai-dev-loop -maxdepth 2 -type d`
 - Finding coverage: all open required findings for this example sequence were addressed or carried forward.
-- Drift scan: checked skill/status/example documentation paths affected by the process change.
+- Whole-change impact scan: checked skill/status/example documentation paths affected by the process change.
 - Validation result: pass for documentation/bootstrap file creation
 - Known limitations: example commit hashes and commands are illustrative, not real repository history
 
@@ -25,7 +25,7 @@ Added explicit bootstrap behavior, workspace conventions, git initialization def
 ### Response to R-0001-01
 
 - Status: Addressed
-- Changes made: Added git readiness bootstrap behavior. The skill now uses `git rev-parse --show-toplevel` when possible, initializes git only after confirming the current directory is the intended project root and not a broad workspace/container parent, and otherwise enters degraded mode with the limitation recorded.
+- Changes made: Added git readiness bootstrap behavior. The skill now uses `git rev-parse --show-toplevel` when repo evidence allows, initializes git only after confirming the current directory is the intended project root and not a broad workspace/container parent, and otherwise enters degraded mode with the limitation recorded.
 - Evidence: Files changed: `SKILL.md`, `.ai-dev-loop/status.md`; Commit: `example-k0001`
 - Notes: The skill does not push, configure remotes, or make external changes without user instruction.
 
@@ -75,14 +75,15 @@ Documentation impact checked. No additional user-facing documentation changes we
 - `git branch --show-current` completed in the example workspace.
 - `find .ai-dev-loop -maxdepth 2 -type d` confirmed the coordination directory layout.
 
-## Remaining Questions
+## Clarifications or Objections
 
-None.
+- Questions for R: None
+- Objections: None
 
 ## Compact Context
 
 Goal: Bootstrap the R/K workflow in a reusable package.  
-State: Initial bootstrap findings resolved; next R review should check role-local context and compression rules.  
+State: Initial bootstrap findings resolved; next R review must check role-local context and compression rules.  
 Decisions: Use `.ai-dev-loop/` at workspace root unless an equivalent project-specific directory exists.  
 Changed: `SKILL.md`, `.ai-dev-loop/README.md`, `.ai-dev-loop/status.md`, `.ai-dev-loop/responses/0001-k-response.md`; commit `example-k0001`.  
 Verified: Git/status and directory checks completed in example workspace.  

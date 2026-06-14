@@ -61,7 +61,7 @@ None.
 
 ## Open Required Findings
 
-None yet; first R review must populate any blockers or required findings.
+None yet; first R review must populate any blockers, required findings, or unresolved K questions/objections.
 
 ## Completed Items
 
@@ -91,6 +91,16 @@ Read .ai-dev-loop/status.md. Begin with R unless status says K is next.
 Write durable records under .ai-dev-loop/ and update status.md before finishing the role turn.
 ```
 
+
+When reading historical records, `pending current commit` means the record/status entry was committed in the same turn that wrote it. Treat it as a valid closed marker for that turn's commit, not as missing evidence or an open item.
+
+
+## R/K clarification path
+
+K must not blindly implement an unclear or questionable R request. R is not a complete task-list generator. K first checks specs, plans, code, tests, docs, validators, scripts, installer/package guidance, status templates, and prior `.ai-dev-loop/` records. If the gap remains material, K records the question or objection in `## Clarifications or Objections`, cites the evidence and risk, proposes a safe path, sets `Next Item: None`, and hands back to R. R must then answer, revise, uphold with evidence, or accept risk before K continues implementation.
+
+When K implements, K must include directly related artifact fixes discovered by the whole-change impact scan. Examples include stale docs, examples, validators, installer text, or package notes, even when R gave only an outcome and not a file-by-file task list.
+
 ## 4. Validate a package revision
 
 ```bash
@@ -99,5 +109,9 @@ python3 scripts/validate-ai-dev-loop-package.py
 
 ## Version
 
-**Version**: 1.3.3
+## v1.4.0 Script Hardening Note
+
+The package validator uses line-by-line Markdown block parsing for review/response records. It does not use global backtracking section regexes for those blocks. Status option-list checks normalize harmless Markdown decorations before comparison. Installer write failures report permission or file-lock diagnostics instead of raw tracebacks.
+
+**Version**: 1.4.0
 **Last Updated**: 2026-06-14

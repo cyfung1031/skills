@@ -16,7 +16,7 @@ Kept the examples synchronized with the mandatory templates and recorded the pac
 - Files changed: `.ai-dev-loop/status.md`, `.ai-dev-loop/context/0003-context.md`, `.ai-dev-loop/responses/0003-k-response.md`
 - Commands run: `grep -R "## Evidence" .ai-dev-loop/reviews .ai-dev-loop/responses`; `find .ai-dev-loop -maxdepth 3 -type f`; `git status --short`
 - Finding coverage: all open required findings for this example sequence were addressed or carried forward.
-- Drift scan: checked skill/status/example documentation paths affected by the process change.
+- Whole-change impact scan: checked skill/status/example documentation paths affected by the process change.
 - Validation result: pass for example-template consistency in this example workspace
 - Known limitations: example commit hashes are illustrative
 
@@ -27,7 +27,7 @@ Kept the examples synchronized with the mandatory templates and recorded the pac
 - Status: Addressed
 - Changes made: Updated example records to include mandatory `## Evidence`, `## Compact Context`, and `None.` placeholders where applicable.
 - Evidence: Files changed: `.ai-dev-loop/reviews/0002-r-review.md`, `.ai-dev-loop/reviews/0003-r-review.md`, `.ai-dev-loop/responses/0001-k-response.md`, `.ai-dev-loop/responses/0002-k-response.md`, `.ai-dev-loop/responses/0003-k-response.md`, `.ai-dev-loop/status.md`; Commit: `example-k0003`
-- Notes: Future template revisions should update examples in the same package commit.
+- Notes: Future template revisions must update examples in the same package commit.
 
 ## Spec Updates
 
@@ -48,9 +48,10 @@ Documentation impact checked. No additional user-facing documentation changes we
 - `find .ai-dev-loop -maxdepth 3 -type f` confirmed expected coordination files.
 - `git status --short` showed a clean example workspace after the documentation commit.
 
-## Remaining Questions
+## Clarifications or Objections
 
-None.
+- Questions for R: None
+- Objections: None
 
 ## Compact Context
 
@@ -64,4 +65,4 @@ Risks: None.
 
 ## Next Expected R Action
 
-No required R action. Future revisions should re-audit examples when templates change.
+No required R action. Future revisions must re-audit examples when templates change.

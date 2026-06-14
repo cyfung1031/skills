@@ -81,7 +81,7 @@ None.
 
 ## Open Required Findings
 
-None yet; first R review must populate any blockers or required findings.
+None yet; first R review must populate any blockers, required findings, or unresolved K questions/objections.
 
 ## Completed Items
 
@@ -174,6 +174,12 @@ def write_text(path: Path, text: str) -> None:
 
 
 def install_template(package_root: Path, target: Path) -> None:
+    """Install template files with local write-error diagnostics.
+
+    File handles may be locked by IDE indexers, background tasks, or operating
+    system policy. Convert those local write failures into concise, actionable
+    CLI errors instead of exposing a raw traceback.
+    """
     skill = package_root / 'SKILL.md'
     reference = package_root / 'REFERENCE.md'
     if not skill.is_file():
@@ -181,14 +187,30 @@ def install_template(package_root: Path, target: Path) -> None:
     if not reference.is_file():
         raise FileNotFoundError(f'package reference not found: {reference}')
 
-    for dirname in ['reviews', 'responses', 'context', 'decisions']:
-        (target / dirname).mkdir(parents=True, exist_ok=True)
-    write_text(target / 'README.md', LOOP_README)
-    write_text(target / 'status.md', STATUS_TEMPLATE)
-    write_text(target / 'context' / 'README.md', CONTEXT_README)
-    write_text(target / 'decisions' / 'README.md', DECISIONS_README)
-    shutil.copy2(skill, target / 'SKILL.md')
-    shutil.copy2(reference, target / 'REFERENCE.md')
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+        for dirname in ['reviews', 'responses', 'context', 'decisions']:
+            (target / dirname).mkdir(parents=True, exist_ok=True)
+        write_text(target / 'README.md', LOOP_README)
+        write_text(target / 'status.md', STATUS_TEMPLATE)
+        write_text(target / 'context' / 'README.md', CONTEXT_README)
+        write_text(target / 'decisions' / 'README.md', DECISIONS_README)
+        shutil.copy2(skill, target / 'SKILL.md')
+        shutil.copy2(reference, target / 'REFERENCE.md')
+    except PermissionError:
+        print(
+            f"error: Permission denied writing to '{target}'. Check your directory permissions.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    except OSError as exc:
+        detail = exc.strerror or str(exc)
+        print(
+            f"error: Could not write template files to '{target}' ({detail}).\n"
+            "Please ensure no other process or IDE workspace has locked these files.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def main() -> int:

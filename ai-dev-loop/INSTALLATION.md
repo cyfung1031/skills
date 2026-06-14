@@ -5,9 +5,11 @@
 The **AI Development Loop** is a tool-agnostic workflow for AI-assisted software development. It uses two durable roles:
 
 - **R — Reviewer/Auditor**, who audits specs, plans, implementation, risks, and evidence.
-- **K — Implementer/Keeper**, who responds to R, updates specs, modifies the real repository, validates changes, and records evidence.
+- **K — Implementer/Keeper**, who responds to R, performs whole-change impact scans, updates specs/docs/examples/tests/harness artifacts, modifies the real repository, validates changes, and records evidence.
 
-The loop is intentionally generic. v1.3.3 adds open-finding carry-forward and code-doc-test consistency gates so K cannot fix code while leaving stale documentation, and R cannot approve without checking that drift. It can be used with any comparable assistant that can read and edit a repository, run commands, and maintain local git history. Named tools are only adapter examples, not requirements.
+The loop is intentionally generic. v1.4.0 keeps open-finding carry-forward and code-doc-test consistency gates. It also adds explicit clarification/objection gates: K can ask R about unclear requirements or challenge questionable findings with evidence. Any comparable assistant can use it when the assistant can read and edit a repository, run commands, and maintain local git history. Named tools are only adapter examples, not requirements.
+
+Unresolved K questions or objections are not advisory chatter; they are loop gates. R must answer, revise, uphold with evidence, or accept risk before expecting further K implementation. R findings are not a task checklist for K; implementation updates must include all directly related documentation, example, validation, installer, package, and status-template consistency fixes, including affected files R did not explicitly mention.
 
 The only hard requirements are:
 
@@ -16,11 +18,12 @@ The only hard requirements are:
 - the workspace is or can become a git repository,
 - R/K handoff records are written under `.ai-dev-loop/` or an equivalent project-specific directory.
 
-If local commits cannot be created because of environment limits, the agent may update only safe documentation/bootstrap files by default; code/spec/test implementation changes require explicit degraded-mode authorization. The agent must record `Commit: not committed: <reason>`, dirty paths, and the intended `R: ...` or `K: ...` commit message in the R/K record and `status.md`.
+If local commits cannot be created because of environment limits, the agent can update only safe documentation/bootstrap files by default. Code/spec/test implementation changes require explicit degraded-mode authorization. The agent must record `Commit: not committed: <reason>`, dirty paths, and the intended `R: ...` or `K: ...` commit message in the R/K record and `status.md`.
+When a record and `status.md` are committed together, `pending current commit` is valid only for that same-turn commit timing problem. Historical readers must treat it as closed evidence for that committed turn, not as degraded mode.
 
 ## Safe extraction rule
 
-Extract the zip into a new empty staging directory first, then copy or install only the intended files into the project root. The v1.3.3 zip uses a clean root layout with no wrapper directory and no root `.ai-dev-loop/` template folder, so staging prevents accidental mixing with unrelated workspace files.
+Extract the zip into a new empty staging directory first, then copy or install only the intended files into the project root. The v1.4.0 zip uses a clean root layout with no wrapper directory and no root `.ai-dev-loop/` template folder, so staging prevents accidental mixing with unrelated workspace files.
 
 ## Fastest Safe Install
 
@@ -117,7 +120,7 @@ None.
 
 ## Open Required Findings
 
-None yet; first R review must populate any blockers or required findings.
+None yet; first R review must populate any blockers, required findings, or unresolved K questions/objections.
 
 ## Completed Items
 
@@ -151,7 +154,7 @@ The validator checks canonical approval statuses, required package files, requir
 
 ## Bootstrap Directory
 
-When the workflow starts, the agent should create this structure if it does not already exist:
+When the workflow starts, the agent creates this structure if it does not already exist:
 
 ```text
 .ai-dev-loop/
@@ -192,7 +195,7 @@ R reviews specs/plans/code and writes .ai-dev-loop/reviews/NNNN-r-review.md
         ↓
 R updates .ai-dev-loop/status.md and commits
         ↓
-K reads durable records, responds, updates specs/code/tests, writes .ai-dev-loop/responses/NNNN-k-response.md
+K reads durable records, responds, performs a whole-change impact scan, updates specs/docs/examples/code/tests/harness artifacts, writes .ai-dev-loop/responses/NNNN-k-response.md
         ↓
 K updates .ai-dev-loop/status.md and commits
         ↓
@@ -228,7 +231,7 @@ The workflow expects strict local git discipline:
 - every R review and status update must be committed with an `R: ...` subject,
 - every K response and status update must be committed with a `K: ...` subject,
 - every spec/code/test update must be included in the relevant `K: ...` commit,
-- `status.md` should be synchronized before a role turn is complete.
+- `status.md` must be synchronized before a role turn is complete.
 
 Useful checks:
 
@@ -260,7 +263,7 @@ Use the same pattern: persistent instructions + real repository edits + git comm
 
 ### The agent keeps relying on chat memory
 
-Tell it to reconstruct state only from git, repository files, `.ai-dev-loop/status.md`, and the latest R/K records. Important chat facts should be copied into `.ai-dev-loop/context/` before use.
+Tell it to reconstruct state only from git, repository files, `.ai-dev-loop/status.md`, and the latest R/K records. Important chat facts must be copied into `.ai-dev-loop/context/` before use.
 
 ### The agent skips `status.md`
 
@@ -272,20 +275,20 @@ Ask it to apply the Approval Status Precision rule. `Approved with notes` means 
 
 ### Validation or tests fail
 
-K should document the exact command, result, likely cause, whether the failure is pre-existing or introduced, and the next action. R should not approve implementation unless failures are resolved or explicitly proven unrelated.
+K must document the exact command, result, likely cause, whether the failure is pre-existing or introduced, and the next action. R must not approve implementation unless failures are resolved or explicitly proven unrelated.
 
 ## Version
 
-**Version**: 1.3.3
+**Version**: 1.4.0
 **Last Updated**: 2026-06-14
 
 ## Git Bootstrap Default
 
 Before initializing git, the agent checks `git rev-parse --show-toplevel` to detect an existing repository, worktree, submodule, or parent repository. The skill allows `git init` only when that command fails, the current directory is confirmed as the intended project root, and the directory is not `$HOME`, `/`, `/mnt/data`, or another broad container/workspace parent. The agent must not push, configure remotes, or change external repository settings unless the user explicitly requests it.
 
-If git cannot be initialized or commits cannot be created, the agent records degraded mode in `status.md` and the current R/K record, lists changed paths, and does not proceed with code implementation beyond safe documentation/bootstrap work unless explicitly authorized.
+If git cannot be initialized or commits cannot be created, the agent records degraded mode in `status.md` and the current R/K record. It lists changed paths. It does not proceed with code implementation beyond safe documentation/bootstrap work unless explicitly authorized.
 
 
 ## Documentation consistency gate
 
-K must keep documentation/specs/examples aligned with behavior changes or record why no documentation update is needed. R must check for documentation discrepancy before approval.
+K must keep documentation/specs/examples plus validators, scripts, installer/package guidance, and status templates aligned with behavior or workflow changes, or record why no related artifact update is needed. R must check for these discrepancies before approval.

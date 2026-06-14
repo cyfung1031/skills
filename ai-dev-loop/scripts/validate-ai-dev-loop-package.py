@@ -9,9 +9,11 @@ import sys
 import tempfile
 from pathlib import Path
 
-MAX_SKILL_BYTES = 16_500
-MAX_SKILL_LINES = 260
-MAX_SKILL_WORDS = 2_250
+# Compact skill budgets use provider-neutral proxies. They leave roughly 20%
+# maintenance headroom over the v1.4.0 compact skill while still catching bloat.
+MAX_SKILL_BYTES = 21_000
+MAX_SKILL_LINES = 290
+MAX_SKILL_WORDS = 2_700
 
 ALLOWED_OVERALL = {
     "Blocked",
@@ -96,6 +98,7 @@ REQUIRED_R_HEADINGS = [
     "Evidence",
     "Findings",
     "Clarifications Needed",
+    "Clarification and Objection Responses",
     "Approval Status",
     "Next Expected K Action",
 ]
@@ -108,7 +111,7 @@ REQUIRED_K_HEADINGS = [
     "Documentation Updates",
     "Implementation Updates",
     "Tests and Validation",
-    "Remaining Questions",
+    "Clarifications or Objections",
     "Compact Context",
     "Next Expected R Action",
 ]
@@ -202,6 +205,22 @@ def split_template_options(value: str) -> list[str]:
     return [part.strip().strip("`") for part in value.split("|") if part.strip()]
 
 
+def normalize_options(raw_line: str) -> set[str]:
+    """Normalize a documented pipe-separated status vocabulary line.
+
+    This keeps validation strict about allowed values while tolerating harmless
+    Markdown decoration and spacing differences.
+    """
+    clean_line = re.sub(
+        r"^(Overall Status|Spec/Plan Status|Implementation Status|Status):\s*",
+        "",
+        raw_line,
+        flags=re.IGNORECASE,
+    )
+    clean_line = clean_line.replace("`", "").replace("*", "").replace("_", "")
+    return {item.strip() for item in clean_line.split("|") if item.strip()}
+
+
 def validate_status_option_lists(path: Path, text: str, root: Path, errors: list[str]) -> None:
     status_specs = {
         "Spec/Plan Status": list(ALLOWED_SPEC_PLAN),
@@ -239,9 +258,11 @@ def validate_status_option_lists(path: Path, text: str, root: Path, errors: list
             continue
         found = split_template_options(value)
         expected = status_specs[label]
-        if found != expected:
+        if normalize_options(" | ".join(found)) != normalize_options(" | ".join(expected)):
             fail(
-                f"{rel(path, root)} has non-canonical {label} option list: {' | '.join(found)}",
+                f"{rel(path, root)}: Mismatched vocabulary format.\n"
+                f"  Expected (normalized): {sorted(normalize_options(' | '.join(expected)))}\n"
+                f"  Found (normalized):    {sorted(normalize_options(' | '.join(found)))}",
                 errors,
             )
 
@@ -262,18 +283,37 @@ def validate_k_response_status_values(path: Path, text: str, root: Path, errors:
             fail(f"{rel(path, root)} has non-canonical K response Status: {value}", errors)
 
 
-def iter_blocks(text: str, heading_pattern: str) -> list[str]:
-    pattern = re.compile(rf"^{heading_pattern}[\s\S]*?(?=^{heading_pattern}|^##\s|\Z)", re.MULTILINE)
-    return [match.group(0) for match in pattern.finditer(text)]
+def iter_blocks(text: str, heading_pattern: str):
+    """Yield (heading_title, block_content) by parsing line-by-line.
+
+    This avoids unanchored full-document Markdown section regexes and guarantees
+    linear O(N) behavior even with malformed or heavily nested headings.
+    """
+    lines = text.splitlines()
+    current_heading: str | None = None
+    current_block: list[str] = []
+    compiled_pattern = re.compile(rf"^{heading_pattern}")
+
+    for line in lines:
+        if compiled_pattern.match(line):
+            if current_heading is not None:
+                yield current_heading, "\n".join(current_block) + "\n"
+            current_heading = line
+            current_block = [line]
+        elif current_heading is not None:
+            current_block.append(line)
+
+    if current_heading is not None:
+        yield current_heading, "\n".join(current_block) + "\n"
 
 
 def validate_r_finding_templates(path: Path, text: str, root: Path, errors: list[str]) -> None:
-    blocks = iter_blocks(text, r"### Finding R-\d{4}-\d{2}: .+")
+    blocks = list(iter_blocks(text, r"### Finding R-\d{4}-\d{2}: .+"))
     if not blocks:
         fail(f"{rel(path, root)} has no R finding blocks", errors)
         return
-    for block in blocks:
-        title = block.splitlines()[0].strip()
+    for title, block in blocks:
+        title = title.strip()
         severity = re.search(r"^-\s*Severity:\s*([^\n]+)$", block, re.MULTILINE)
         status = re.search(r"^-\s*Status:\s*([^\n]+)$", block, re.MULTILINE)
         details = re.search(r"^-\s*Details:\s*(.+)$", block, re.MULTILINE)
@@ -293,12 +333,12 @@ def validate_r_finding_templates(path: Path, text: str, root: Path, errors: list
 
 
 def validate_k_response_templates(path: Path, text: str, root: Path, errors: list[str]) -> None:
-    blocks = iter_blocks(text, r"### Response to R-\d{4}-\d{2}")
+    blocks = list(iter_blocks(text, r"### Response to R-\d{4}-\d{2}"))
     if not blocks:
         fail(f"{rel(path, root)} has no K response blocks", errors)
         return
-    for block in blocks:
-        title = block.splitlines()[0].strip()
+    for title, block in blocks:
+        title = title.strip()
         status = re.search(r"^-\s*Status:\s*([^\n]+)$", block, re.MULTILINE)
         changes = re.search(r"^-\s*Changes made:\s*(.+)$", block, re.MULTILINE)
         evidence = re.search(r"^-\s*Evidence:\s*(.+)$", block, re.MULTILINE)
@@ -310,6 +350,48 @@ def validate_k_response_templates(path: Path, text: str, root: Path, errors: lis
             fail(f"{rel(path, root)} {title} missing Changes made", errors)
         if not evidence:
             fail(f"{rel(path, root)} {title} missing Evidence", errors)
+
+
+def section_body(text: str, heading: str) -> str:
+    """Return a level-2 section body using a linear line parser."""
+    target = f"## {heading}"
+    collecting = False
+    body: list[str] = []
+    for line in text.splitlines():
+        if line.strip() == target:
+            collecting = True
+            body = []
+            continue
+        if collecting and line.startswith("## "):
+            break
+        if collecting:
+            body.append(line)
+    return "\n".join(body) + ("\n" if body else "")
+
+
+def validate_r_clarification_response_section(path: Path, text: str, root: Path, errors: list[str]) -> None:
+    body = section_body(text, "Clarification and Objection Responses")
+    if not body.strip():
+        fail(f"{rel(path, root)} has empty Clarification and Objection Responses section", errors)
+
+
+def validate_k_clarification_objection_section(path: Path, text: str, root: Path, errors: list[str]) -> None:
+    body = section_body(text, "Clarifications or Objections")
+    if not body.strip():
+        fail(f"{rel(path, root)} has empty Clarifications or Objections section", errors)
+        return
+    for phrase in ["Questions for R:", "Objections:"]:
+        if phrase not in body:
+            fail(f"{rel(path, root)} Clarifications or Objections missing canonical field: {phrase}", errors)
+    if re.search(r"^None\.?\s*$", body.strip(), re.IGNORECASE):
+        fail(f"{rel(path, root)} uses bare None in Clarifications or Objections instead of canonical fields", errors)
+
+
+def validate_whole_change_evidence_label(path: Path, text: str, root: Path, errors: list[str]) -> None:
+    if path.name.endswith("k-response.md") and "Whole-change impact scan:" not in text:
+        fail(f"{rel(path, root)} missing Whole-change impact scan evidence label", errors)
+    if "Drift scan:" in text:
+        fail(f"{rel(path, root)} uses stale/narrow Drift scan label; use Whole-change impact scan", errors)
 
 
 def validate_reference_status_vocabulary(root: Path, errors: list[str]) -> None:
@@ -447,15 +529,22 @@ def validate_compact_skill(root_skill: Path, root: Path, errors: list[str]) -> N
         "open required findings block next implementation",
         "Documentation consistency is a hard gate",
         "Documentation drift prevention",
-        "R must check documentation discrepancy",
         "Open required findings ledger",
         "K must address all open required findings listed in status",
         "R must carry forward unresolved findings",
         "Scope-change freeze",
         "Scope-change control",
-        "Code-doc-test matrix",
+        "Code-doc-test-harness matrix",
         "R must verify code-doc-test consistency",
-        "drift scan",
+        "whole-change impact scan",
+        "K can ask R for clarification",
+        "K records evidence, risk, proposed safe path",
+        "Clarifications or Objections",
+        "R must answer",
+        "Clarification and Objection Responses",
+        "R findings define required outcomes, not complete K task checklists",
+        "docs/specs/examples/tests/validators/scripts/package guidance",
+        "not only literal R bullet items or requested files",
     ]
     for phrase in required_phrases:
         if phrase not in text:
@@ -523,6 +612,8 @@ def validate_manual_status_templates(root: Path, errors: list[str]) -> None:
                     fail(f"{rel_path} manual status template #{index} missing heading: {heading}", errors)
             if "first R review must populate" not in block:
                 fail(f"{rel_path} manual status template #{index} missing Open Required Findings bootstrap text", errors)
+            if "unresolved K questions/objections" not in block:
+                fail(f"{rel_path} manual status template #{index} missing K question/objection ledger text", errors)
 
 
 def validate_installer_status_template(root: Path, errors: list[str]) -> None:
@@ -530,7 +621,7 @@ def validate_installer_status_template(root: Path, errors: list[str]) -> None:
     if not installer.exists():
         return
     text = read_text(installer)
-    for phrase in ["## Open Required Findings", "first R review must populate"]:
+    for phrase in ["## Open Required Findings", "first R review must populate", "unresolved K questions/objections"]:
         if phrase not in text:
             fail(f"installer status template missing: {phrase}", errors)
 
@@ -598,6 +689,104 @@ def validate_installer_smoke_test(root: Path, errors: list[str]) -> None:
             fail("installer smoke test expected --force without --force-live-records to reject live records", errors)
 
 
+
+
+def validate_agent_readability_guidance(root: Path, errors: list[str]) -> None:
+    """Ensure package docs keep agent-readable instruction semantics."""
+    checks = {
+        "SKILL.md": [
+            "K can ask R for clarification or object",
+            "K records evidence, risk, proposed safe path",
+            "Command order:",
+        ],
+        "REFERENCE.md": [
+            "## Agent-Readable Instruction Style",
+            "imperative verbs",
+            "Avoid soft guidance for required behavior",
+            "Use agent-readable control flow",
+        ],
+        "README.md": ["explicit R/K clarification and objection gates"],
+        "QUICKSTART.md": ["K must not blindly implement", "R is not a complete task-list generator"],
+        "INSTALLATION.md": ["explicit clarification/objection gates"],
+        "COMPLETE-PACKAGE-GUIDE.md": ["explicit clarification/objection gates"],
+    }
+    for rel_path, phrases in checks.items():
+        path = root / rel_path
+        if not path.exists():
+            continue
+        text = read_text(path)
+        for phrase in phrases:
+            if phrase not in text:
+                fail(f"{rel_path} missing agent-readable instruction phrase: {phrase}", errors)
+
+
+
+
+def validate_security_hardening(root: Path, errors: list[str]) -> None:
+    """Ensure validator and installer keep the v1.4.0 hardening fixes."""
+    validator = root / "scripts" / "validate-ai-dev-loop-package.py"
+    installer = root / "scripts" / "install-ai-dev-loop-template.py"
+    if validator.exists():
+        text = read_text(validator)
+        required = [
+            "def iter_blocks(text: str, heading_pattern: str):",
+            "linear O(N) behavior",
+            "compiled_pattern.match(line)",
+            "def normalize_options(raw_line: str) -> set[str]:",
+            "Mismatched vocabulary format",
+        ]
+        for phrase in required:
+            if phrase not in text:
+                fail(f"validator missing v1.4.0 hardening phrase: {phrase}", errors)
+        old_iter_body = "heading_pattern}" + "[" + r"\s\S" + "]*?"
+        if old_iter_body in text:
+            fail("validator still contains backtracking-prone global iter_blocks regex", errors)
+    if installer.exists():
+        text = read_text(installer)
+        for phrase in ["Permission denied writing", "Could not write template files", "locked these files"]:
+            if phrase not in text:
+                fail(f"installer missing local write-error diagnostic phrase: {phrase}", errors)
+
+
+def validate_pending_current_commit_semantics(root: Path, errors: list[str]) -> None:
+    """Ensure pending-current-commit is documented as a closed historical marker."""
+    checks = {
+        "SKILL.md": ["`pending current commit` is valid", "do not treat it later as missing evidence"],
+        "REFERENCE.md": ["literal value `pending current commit`", "valid, closed audit entry", "must not be flagged as an uncommitted file, missing evidence, or open finding"],
+        "COMPLETE-PACKAGE-GUIDE.md": ["treat `pending current commit`", "valid, closed audit entry", "not as missing evidence or an open finding"],
+        "README.md": ["`pending current commit`", "closed audit marker", "not as missing evidence"],
+        "QUICKSTART.md": ["`pending current commit`", "valid closed marker", "not as missing evidence or an open item"],
+        "INSTALLATION.md": ["`pending current commit`", "closed evidence", "not as degraded mode"],
+    }
+    for rel_path, phrases in checks.items():
+        path = root / rel_path
+        if not path.exists():
+            continue
+        text = read_text(path)
+        for phrase in phrases:
+            if phrase not in text:
+                fail(f"{rel_path} missing pending-current-commit semantic phrase: {phrase}", errors)
+
+
+def validate_whole_change_guidance(root: Path, errors: list[str]) -> None:
+    """Ensure the whole-change responsibility is visible beyond compact SKILL.md."""
+    checks = {
+        "README.md": ["whole-change impact", "not exhaustive task lists", "did not name those files explicitly"],
+        "QUICKSTART.md": ["whole-change impact scan", "complete task-list generator", "not a file-by-file task list"],
+        "INSTALLATION.md": ["whole-change impact", "not a task checklist", "did not explicitly mention"],
+        "COMPLETE-PACKAGE-GUIDE.md": ["whole-change responsibility", "not exhaustive K task lists", "did not explicitly list"],
+        "REFERENCE.md": ["whole-change impact scan", "not a complete mechanical task list", "literal bullet list and file mentions"],
+    }
+    for rel_path, phrases in checks.items():
+        path = root / rel_path
+        if not path.exists():
+            continue
+        text = read_text(path)
+        for phrase in phrases:
+            if phrase not in text:
+                fail(f"{rel_path} missing whole-change guidance phrase: {phrase}", errors)
+
+
 def main() -> int:
     args = parse_args()
     root = args.root.resolve()
@@ -620,6 +809,10 @@ def main() -> int:
     validate_k_response_status_templates(root, errors)
     validate_embedded_record_templates(root, errors)
     validate_manual_status_templates(root, errors)
+    validate_whole_change_guidance(root, errors)
+    validate_agent_readability_guidance(root, errors)
+    validate_pending_current_commit_semantics(root, errors)
+    validate_security_hardening(root, errors)
     validate_installer_status_template(root, errors)
     validate_installer_smoke_test(root, errors)
 
@@ -633,12 +826,15 @@ def main() -> int:
             text = read_text(path)
             validate_headings(path, REQUIRED_R_HEADINGS, "R", root, errors)
             validate_r_finding_templates(path, text, root, errors)
+            validate_r_clarification_response_section(path, text, root, errors)
     if responses_dir.exists():
         for path in sorted(responses_dir.glob("*.md")):
             text = read_text(path)
             validate_headings(path, REQUIRED_K_HEADINGS, "K", root, errors)
             validate_k_response_status_values(path, text, root, errors)
             validate_k_response_templates(path, text, root, errors)
+            validate_k_clarification_objection_section(path, text, root, errors)
+            validate_whole_change_evidence_label(path, text, root, errors)
 
     validate_stale_language(root, errors)
 

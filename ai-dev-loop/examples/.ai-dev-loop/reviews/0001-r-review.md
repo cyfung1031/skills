@@ -28,7 +28,7 @@ Changes requested. The package needs explicit bootstrap defaults so agents can s
 - Status: Open
 - Type: Process issue
 - Location: `SKILL.md`
-- Details: The workflow depends on local commits, but the initial instructions do not fully specify what an agent should do when `.git/` is absent.
+- Details: The workflow depends on local commits, but the initial instructions do not fully specify what an agent must do when `.git/` is absent.
 - Required action: Define whether to initialize git automatically, when to enter degraded mode, and how to record the limitation.
 
 ### Finding R-0001-02: Coordination directory placement must be deterministic
@@ -46,7 +46,7 @@ Changes requested. The package needs explicit bootstrap defaults so agents can s
 - Status: Open
 - Type: Spec gap
 - Location: Bootstrap workflow
-- Details: A new workspace may have no specs, plans, roadmap, tickets, or design notes. The skill should bootstrap process files but must not invent product scope.
+- Details: A new workspace may have no specs, plans, roadmap, tickets, or design notes. The skill must bootstrap process files but must not invent product scope.
 - Required action: Add rules for safe initialization and stopping points when no durable product requirements exist.
 
 ### Finding R-0001-04: Single-agent alternation needs a durable rule
@@ -61,6 +61,10 @@ Changes requested. The package needs explicit bootstrap defaults so agents can s
 ## Clarifications Needed
 
 None. Use safe autonomous defaults that do not make external changes, push to remotes, or invent product scope.
+
+## Clarification and Objection Responses
+
+None. No K question or objection was pending for this R turn.
 
 ## Approval Status
 

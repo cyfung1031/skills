@@ -5,7 +5,7 @@ This file holds non-normative guidance. `SKILL.md` remains the source of truth.
 Use the loop when a repository benefits from a durable reviewer/implementer split:
 
 1. R reviews specs, plans, code, tests, and prior K responses.
-2. K responds to every finding, updates specs/code/tests, validates, and records evidence.
+2. K responds to every finding, performs a whole-change impact scan, updates all directly affected specs/docs/examples/code/tests/validators/scripts/package guidance, validates, and records evidence.
 3. Both roles update `.ai-dev-loop/status.md` after their turns.
 4. Git commits are required audit trail entries when git is available.
 
@@ -24,9 +24,9 @@ The root `SKILL.md` is intentionally compact to reduce always-loaded context. Th
 Use this skill when a software development workspace already contains specifications, implementation plans, roadmaps, tickets, or design notes, and the AI agent must autonomously drive development through two cooperating roles:
 
 - **R — Reviewer/Auditor**: reviews specifications, plans, and implementation work; identifies risks, gaps, contradictions, unclear requirements, and quality issues.
-- **K — Implementer/Keeper**: updates specifications, resolves reviewer feedback, implements code, tests changes, and records responses.
+- **K — Implementer/Keeper**: updates specifications, resolves reviewer feedback, implements code, tests changes, performs related documentation/harness consistency updates, and records responses.
 
-The process is designed to work without requiring human decisions for normal review, clarification, implementation, and follow-up cycles. Human involvement is only required for blocked decisions explicitly outside the available specifications or project authority.
+The process runs normal review, clarification, implementation, and follow-up cycles without human decisions. R and K can exchange explicit clarification questions or evidence-backed objections inside the loop. Human involvement is required only for blocked decisions outside the available specifications or project authority.
 
 ## Tool-Agnostic Scope
 
@@ -106,11 +106,11 @@ Do not invent additional approval states. When a review covers both planning and
    - R and K continue the review-response loop until R has no further follow-up.
    - K may then proceed to the next implementation step only after the latest R review has no unresolved required finding or R/human has accepted the risk in writing.
    - Respect the user's current requested scope. Do not proceed to the next roadmap item unless the user asked for autonomous continuation, the project instructions explicitly authorize it, or `status.md` already records that continuation scope.
-   - The AI should not ask the human to choose between ordinary engineering options when the workspace gives enough context to make a reasonable decision.
+   - The AI must not ask the human to choose between ordinary engineering options when workspace evidence is sufficient for a safe decision.
 
 6. **Spec-first discipline**
    - Before implementation, R audits the relevant specifications and implementation plan.
-   - K resolves spec gaps before writing code when possible.
+   - K resolves spec gaps before writing code when repo evidence supports a safe update.
    - If implementation reveals a spec issue, K updates the spec and records the reason.
    - R then reviews both the spec and implementation changes.
 
@@ -150,7 +150,7 @@ Recommended file naming:
 
 Where `NNNN` is a zero-padded sequence number such as `0001`, `0002`, `0003`.
 
-If the repository already has a project-specific location for agent notes, ADRs, review logs, or implementation records, use that instead and document the chosen location in `.ai-dev-loop/README.md` or the existing equivalent.
+If the repository already has a project-specific location for agent notes, ADRs, review logs, or implementation records, use that location. Document the chosen location in `.ai-dev-loop/README.md` or the existing equivalent.
 
 ## Integrated Context Compressor
 
@@ -163,7 +163,7 @@ Apply these rules whenever this skill is active. The goal is to reduce token usa
 - Avoid restating stable instructions, accepted decisions, full logs, or old alternatives.
 - Prefer exact paths, sequence numbers, commit hashes, command names, and finding IDs.
 - Use compact records by default: target roughly 200-500 words for ordinary R/K records, shorter for routine approvals, longer only for high-risk evidence.
-- Ask at most one human clarification question when blocked; otherwise make a safe autonomous assumption and document it.
+- Prefer a small focused set of R clarification questions when blocked by unclear requirements; escalate to a human only under the human-escalation criteria. Otherwise make a safe autonomous assumption and document it.
 
 ### Context pruning
 
@@ -257,7 +257,13 @@ git rev-parse --show-toplevel
 
 If that command succeeds, use the reported repository root for normal operation. Do not run `git init` merely because `.git/` is absent in the current directory; in worktrees and submodules, `.git` can be a file, and nested project folders can inherit a parent repository.
 
-Only run `git init` if `git rev-parse --show-toplevel` fails, the current directory is confirmed to be the intended project root, and the directory is not `$HOME`, `/`, `/mnt/data`, or another broad container or workspace parent. Treat the current directory as confirmed only when it contains a project manifest such as `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, a root `README.md` plus source directories, or an explicit user statement that this directory is the project root. Otherwise enter degraded mode and ask for the intended project root before initializing git:
+Only run `git init` when all conditions hold:
+
+- `git rev-parse --show-toplevel` fails.
+- The current directory is confirmed as the intended project root.
+- The directory is not `$HOME`, `/`, `/mnt/data`, or another broad container/workspace parent.
+
+Confirm the current directory only when it contains a project manifest (`package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`), a root `README.md` plus source directories, or an explicit user statement that this directory is the project root. Otherwise enter degraded mode and ask for the intended project root before initializing git:
 
 ```bash
 git init
@@ -299,12 +305,12 @@ Rules:
 
 - Do not discard user changes.
 - Do not overwrite uncommitted changes unless they were created by the current role in the current loop and the change is intentionally being amended.
-- If unrelated uncommitted changes exist, work around them when possible and record the constraint.
+- If unrelated uncommitted changes exist, avoid touching them when repo state permits and record the constraint.
 - Every completed R turn must be committed locally after the R review and synchronized `status.md` update are written.
 - Every completed K turn must be committed locally after the K response, synchronized `status.md`, and any spec/code/test changes are written.
 - Every spec update, implementation change, and test update must be included in a K commit unless it is explicitly part of an R-only documentation review turn.
 - Commit subjects must keep the role-log format: `R: <review action>` for R commits and `K: <implementation or response action>` for K commits. Do not replace these prefixes with generic subjects such as `update files` or `fix issue`.
-- If commits cannot be created because the environment lacks git identity, permissions, or repository access, the role must record `Commit: not committed: <reason>` as a validation limitation and list the exact files that remain uncommitted in the role record and `status.md`.
+- If commits cannot be created because the environment lacks git identity, permissions, or repository access, record `Commit: not committed: <reason>` as a validation limitation. List the exact files that remain uncommitted in the role record and `status.md`.
 
 Required commit prefixes:
 
@@ -374,6 +380,10 @@ State the overall review result.
 
 List questions only when the workspace does not contain enough information to make a safe autonomous decision.
 
+## Clarification and Objection Responses
+
+When K asked questions or objected, answer each item, revise the finding, uphold it with evidence, or record accepted risk. State `None` only when no K question or objection is pending.
+
 ## Approval Status
 
 Use both fields when the review covers both planning/spec status and implementation status:
@@ -393,16 +403,16 @@ Overall status must be one of:
 Do not use `Approved with notes` when any Critical, High, or Medium finding has a required K action.
 Use `Changes requested` when K must correct the artifact under review before it can proceed.
 Use `Pending implementation` when the spec/plan is approved, no correction is required before implementation starts, and R's findings are implementation requirements or documentation follow-up for K to perform next.
-For spec audits that authorize implementation but still require K work, use `Spec/Plan Status: Approved for implementation` and `Implementation Status: Not started`, with overall status `Pending implementation` unless the spec/plan itself needs correction.
+For spec audits that authorize implementation but still require K work, use `Spec/Plan Status: Approved for implementation` and `Implementation Status: Not started`. Use overall status `Pending implementation` unless the spec/plan itself needs correction.
 
 ## Next Expected K Action
 
-State what K should do next.
+State K's next required action.
 ```
 
 ### R decision rules
 
-R should not block on minor style issues unless they affect correctness, maintainability, or project conventions.
+R must not block on minor style issues unless they affect correctness, maintainability, or project conventions.
 
 R may approve when:
 
@@ -422,12 +432,14 @@ R must continue the loop when:
 
 ## Role K: Implementer/Keeper
 
-K is responsible for responding to R, updating specs and documentation, implementing code, and validating changes.
+K is responsible for responding to R, updating specs and documentation, implementing code, validating changes, and fixing directly related cross-file/harness discrepancies discovered by the whole-change impact scan. R's findings define required outcomes and evidence, not a complete mechanical task list; K must not stop at the literal files or bullets R mentioned when related artifacts are affected.
 
 ### K must do
 
 - Read R's latest markdown review.
 - Address every finding explicitly.
+- Treat R findings as required outcomes, not an exhaustive checklist; infer and fix all directly related discrepancies, including files R did not name.
+- Run a whole-change impact scan across specs, docs, examples, tests, validators, scripts, installer/package guidance, status templates, and release notes when behavior or workflow changes.
 - Update specifications when the issue is a spec gap.
 - Update documentation, examples, installation notes, quickstart, package guides, or reference docs when behavior, commands, setup, API, config, workflow, validation, packaging, or user-visible semantics change.
 - Update implementation when the issue is a code or behavior gap.
@@ -457,6 +469,7 @@ Briefly summarize the response.
 - Git status: <clean, dirty, or limited summary>
 - Relevant commits: <commit hashes>
 - Files changed: <paths or none>
+- Whole-change impact scan: <related docs/specs/examples/tests/validators/scripts/package guidance checked or updated>
 - Commands run: <exact commands or none>
 - Validation result: <pass, fail, limited, or not applicable>
 - Known limitations: <limitations or none>
@@ -486,9 +499,12 @@ List implementation updates, if any.
 
 List commands run and results.
 
-## Remaining Questions
+## Clarifications or Objections
 
-Only include questions that cannot be resolved from the workspace context.
+- Questions for R: <only unresolved spec/requirement questions, or None>
+- Objections: <requirement/finding objections with evidence and proposed alternative, or None>
+
+Questions or objections must identify the exact requirement/finding, cite repo/spec/test evidence, explain the risk of implementing as written, and propose a safe default or alternatives when repo evidence supports them.
 
 ## Compact Context
 
@@ -501,23 +517,26 @@ Ask R to review the response, updated specs, implementation, and tests.
 
 ### K decision rules
 
-K autonomously chooses the next action when the existing roadmap, implementation plan, or specifications imply priority, but unresolved required R findings override roadmap priority and block new implementation. Documentation discrepancy is a required finding when changed behavior and docs/specs/examples diverge.
+K autonomously chooses the next action when the existing roadmap, implementation plan, or specifications imply priority, but unresolved required R findings override roadmap priority and block new implementation. Within an active finding, K must go beyond R's literal bullet list and file mentions when necessary to complete the related change safely. Documentation, example, validator, script, installer, package-guide, or status-template discrepancy is a required finding when changed behavior/workflow and supporting artifacts diverge. Unrelated adjacent improvements are not part of the active fix; record them as future findings, decisions, or next items instead.
 
 K may update specifications without human confirmation when:
 
 - The update resolves ambiguity using existing project conventions.
 - The update aligns with the implementation plan or roadmap.
-- The update narrows behavior rather than introducing unrelated scope.
+- The update narrows behavior or completes directly related consistency work rather than introducing unrelated scope.
 - The update is documented in the K response and committed.
 
 K must avoid proceeding silently when:
 
+- The requirement or finding is materially unclear, contradictory, or underspecified.
+- R's requested action appears inconsistent with durable specs, tests, repo behavior, or user intent.
+- K believes R is wrong, has missed evidence, or is asking for a change that would create avoidable defects or maintainability risk.
 - The change would materially alter product direction.
 - The change introduces a new external dependency with unclear approval.
 - The change may delete or migrate user data.
 - The change has security, legal, compliance, or cost implications not addressed by existing specs.
 
-In those cases, K records the blocker in markdown and stops at a safe boundary.
+In those cases, K records a clarification request, objection, or blocker in markdown and stops at a safe boundary when continuing would require guessing.
 
 ## Role-Local Context Protocol
 
@@ -557,7 +576,7 @@ Create a context note rather than leaving `.ai-dev-loop/context/` empty when any
 - The role is about to switch from spec review to implementation, or from implementation to review.
 - The user provides material constraints in chat that are not already captured in repository files.
 
-The context note should be compact and current. It must include only durable handoff facts: goal, state, decisions, changed paths/commits, validation, next action, and risks. It must not replace status, R/K records, specs, or code.
+The context note must be compact and current. It includes only durable handoff facts: goal, state, decisions, changed paths/commits, validation, next action, and risks. It must not replace status, R/K records, specs, or code.
 
 ### Decision record gate
 
@@ -705,11 +724,11 @@ To avoid role confusion and accidental overwrites, R and K own different section
 - **Shared but append-only:** `Blockers`, `Decisions`, and compact context references. Do not delete another role's entry unless a later committed record explicitly resolves it.
 - **Both roles may update:** `Current Focus` only when the change follows an approved plan or recorded decision.
 
-Prefer appending dated/numbered status bullets only while they remain useful. When `Completed Items` grows beyond the active work, archive resolved history into `context/` or `decisions/` and keep `status.md` focused on current state, latest R/K paths, approval state, active blockers, next action, and commit hashes.
+Append dated/numbered status bullets only while they remain useful. When `Completed Items` grows beyond the active work, archive resolved history into `context/` or `decisions/`. Keep `status.md` focused on current state, latest R/K paths, approval state, active blockers, next action, and commit hashes.
 
 ### Commit-hash timing note
 
-A status file cannot always know the hash of the commit that is about to introduce the status update. In that case, record the path plus `pending current commit`, commit the files, and let the next role turn replace or supplement it with the actual hash if useful. Do not invent commit hashes.
+A status file cannot always know the hash of the commit that is about to introduce the status update. In that case, record the path plus `pending current commit`, then commit the files. A later role can replace or supplement it with the actual hash when useful. Do not invent commit hashes. When reviewing historical turns, the literal value `pending current commit` within a committed record is a valid, closed audit entry for that specific turn's commit. It must not be flagged as an uncommitted file, missing evidence, or open finding.
 
 
 ## Loop Termination Criteria
@@ -735,28 +754,36 @@ If R records `Changes requested` or `Pending implementation`, K must respond or 
 The loop must not continue indefinitely. Trigger a circuit breaker and write `.ai-dev-loop/decisions/NNNN-blocker.md` when any of these occur:
 
 - The same finding is rejected or re-opened after **three K resolution attempts**.
-- R and K disagree twice about whether a finding is resolved and the disagreement depends on product intent, risk tolerance, or external constraints absent from the workspace.
+- R and K disagree twice about one of these: whether a finding is resolved, whether K's objection is valid, or whether a clarification can be answered from workspace evidence. This breaker applies only when the disagreement depends on product intent, risk tolerance, or external constraints absent from the workspace.
 - Two consecutive rounds make no material change to specs, code, tests, or decision evidence.
 - The loop exceeds **six R/K rounds** for one roadmap item without approval.
 
 When the circuit breaker trips, K writes the blocker file first, records the safe stopping point, commits it, and stops for human input.
 
-## Handling Clarifications Without Human Involvement
+## Agent-Readable Instruction Style
 
-When R asks for clarification, K should first try to answer using:
+Package instructions must be easy for agents to execute and validate. Prefer:
 
-1. Existing specifications
-2. Implementation plans
-3. Roadmap files
-4. Existing code behavior
-5. Tests
-6. README or developer documentation
-7. Prior R/K markdown records
-8. Project conventions visible in the repository
+- imperative verbs: `must`, `do`, `record`, `verify`, `block`, `commit`;
+- explicit triggers and outcomes;
+- named fields, headings, files, commands, and status values;
+- short sentences or numbered control flow for gates.
 
-K should update the relevant markdown and, when appropriate, the specification itself.
+Avoid soft guidance for required behavior: `should`, `try to`, `might`, `natural`, `reasonable`, and long compound sentences. Use `can` only for permission, not obligation. Use `when repo evidence supports...` instead of vague `when possible`.
 
-Only escalate to the human when the decision cannot be made safely from repository context.
+## Handling Clarifications and Objections
+
+Use agent-readable control flow, not conversational advice:
+
+1. K first checks durable repo evidence: specs, plans, roadmap files, code behavior, tests, README/developer docs, prior R/K records, and project conventions.
+2. If evidence resolves the ambiguity, K records the decision and implements the safe path.
+3. If the material gap remains, K records a question in `## Clarifications or Objections`, sets `Next Item: None`, and returns to R.
+4. If R's request conflicts with evidence, creates avoidable risk, or appears to solve the wrong problem, K records an objection instead of implementing blindly.
+5. When a clarification or objection changes behavior, K updates the relevant markdown/spec plus related docs, examples, tests, validators, scripts, installer/package guidance, and status templates that would otherwise drift.
+
+Each K question or objection must include: exact unclear or disputed requirement, evidence checked, impact/risk, recommended safe path, and whether safe partial progress exists.
+
+R's next review must answer, revise, uphold with evidence, or accept risk for each K question or objection before expecting further implementation. Until R does so, the open question or objection remains a required follow-up item in `status.md` and blocks new implementation scope. Escalate to the human only when the decision cannot be made safely from repository context or R/K disagreement reaches the circuit breaker criteria.
 
 ## Human Escalation Criteria
 
@@ -856,7 +883,7 @@ Common production failures and mandatory countermeasures:
 - **Code-only fixes:** every behavior change needs matching docs/specs/examples/tests or a recorded no-doc rationale with evidence.
 - **Rubber-stamp reviews:** R verifies changed paths, diffs, docs/specs/examples/tests, validation output, and status before approval.
 - **Scope creep:** K fixes the active R findings only. New adjacent work is recorded as a future finding, decision, or next item after R approval.
-- **Weak evidence:** each finding response cites changed paths, commands/results, commits, and drift-scan outcome.
+- **Weak evidence:** each finding response cites changed paths, commands/results, commits, and whole-change impact-scan outcome.
 
 ## Quality Gates
 
@@ -903,7 +930,7 @@ If a command fails:
 
 1. Record the exact command and summarized failure in K's markdown response.
 2. Determine whether it is caused by K's changes, pre-existing workspace state, flaky tests, missing dependencies, or environment limitations.
-3. Fix issues caused by K's changes when possible.
+3. Fix issues caused by K's changes when repo state permits.
 4. Commit the fix and updated response.
 5. If failure is pre-existing, flaky, or environmental, document evidence: baseline command, affected tests, why unrelated, and any safe workaround.
 6. R may grant `Approved with notes` only when evidence shows the failure is unrelated to K's changes and the changed behavior has adequate alternative validation.
@@ -947,7 +974,7 @@ Never skip the R/K record merely because the same agent can infer the state inte
 
 Use compressed records by default. Preserve durable facts, open findings, decisions, commit hashes, file paths, validation results, and next actions; omit redundant explanation.
 
-Proceed autonomously through review, response, implementation, and follow-up loops until one of these occurs:
+Proceed through review, response, implementation, and follow-up loops by resolving ordinary ambiguity from repo evidence and using the R/K clarification-or-objection path when needed, until one of these occurs:
 
 - The current roadmap item is approved and the next item can begin.
 - The roadmap is complete.
@@ -956,17 +983,23 @@ Proceed autonomously through review, response, implementation, and follow-up loo
 
 Always leave the repository in a traceable state with committed local history for every completed R or K action, using `R:` and `K:` commit subjects; otherwise record the commit limitation and exact uncommitted paths.
 
-## v1.3.3 Token-Efficiency and Packaging Notes
+## v1.4.0 Validator and Installer Hardening
+
+- Parse R finding blocks and K response blocks line-by-line. Do not use full-document `.*?` or `[\s\S]*?` lookahead regexes for Markdown block extraction. This keeps validation linear in input size and avoids ReDoS-style backtracking on malformed headings.
+- Normalize status option-list vocabulary before comparison: remove common Markdown decoration, strip label prefixes, split on `|`, trim each item, and compare sets of values. Keep separate canonical status-value validation for actual record state.
+- Wrap installer template writes with local `PermissionError` and `OSError` handling. Report permission or file-lock causes with actionable messages instead of raw tracebacks.
+
+## v1.4.0 Token-Efficiency and Packaging Notes
 
 This revision keeps durable R/K separation, open-finding carry-forward, code-doc-test consistency checks, evidence-first reviews, synchronized status, git discipline, degraded-mode honesty, and optional reference material. It also fixes the prior validation/package mismatch:
 
-- `SKILL.md` remains the compact authoritative policy and now fits the validator budget.
+- `SKILL.md` remains the compact authoritative policy and fits a realistic validator budget with modest maintenance headroom.
 - `REFERENCE.md` remains optional and skippable for simple turns.
 - R/K templates remain canonical and auditable.
 - Context compression summarizes logs without deleting risk evidence.
 - Resolved `status.md` history may move into context or decision notes.
 - Release zips use the documented clean root layout.
-- Validator size checks remain provider-neutral: bytes, lines, and words, not model-specific tokenizers.
+- Validator size checks remain provider-neutral: bytes, lines, and words, not model-specific tokenizers; limits must leave modest headroom for maintenance while still preventing bloat.
 
 ## Production hardening addendum
-Latest R review is a hard gate. K must address every current R-required issue before any next implementation, roadmap item, refactor, or opportunistic cleanup. Partially addressed, unvalidated, or evidence-free responses keep `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None` unless R/human explicitly accepts the risk. Token budgets may justify aggressive editing, not weaker obligations.
+Latest R review is a hard gate. K must address every current R-required issue and all directly related consistency fallout before any next implementation, roadmap item, refactor, or opportunistic cleanup. Partially addressed, unvalidated, or evidence-free responses keep `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None` unless R/human explicitly accepts the risk. Token budgets may justify aggressive editing, not weaker obligations.

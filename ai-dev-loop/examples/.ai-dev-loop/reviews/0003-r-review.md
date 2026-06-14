@@ -8,7 +8,7 @@ Reviewed the revised skill package after K addressed R-0002 findings, including 
 Documentation consistency was included in the review scope.
 
 
-Approved with notes. The package is suitable as a reusable tool-agnostic workflow. Future package revisions should keep examples synchronized with the mandatory templates.
+Approved with notes. The package is suitable as a reusable tool-agnostic workflow. Future package revisions must keep examples synchronized with the mandatory templates.
 
 ## Evidence
 
@@ -29,11 +29,15 @@ Approved with notes. The package is suitable as a reusable tool-agnostic workflo
 - Type: Process issue
 - Location: `examples/.ai-dev-loop/`
 - Details: Examples are part of the teaching surface for the skill and must remain compliant whenever templates change.
-- Required action: Future package revisions should update all examples in the same package revision when the required R or K template changes.
+- Required action: Future package revisions must update all examples in the same package revision when the required R or K template changes.
 
 ## Clarifications Needed
 
 None.
+
+## Clarification and Objection Responses
+
+None. No K question or objection was pending for this R turn.
 
 ## Approval Status
 
@@ -43,4 +47,4 @@ None.
 
 ## Next Expected K Action
 
-No corrective action is required before use. Future package revisions should keep examples and templates synchronized.
+No corrective action is required before use. Future package revisions must keep examples and templates synchronized.
