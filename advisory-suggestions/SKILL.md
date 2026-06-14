@@ -1,107 +1,67 @@
 ---
+
 name: advisory-suggestions
-description: Use when the user asks for concise, neutral, non-directive suggestions about a specified topic. The response should surface practical options, key risks, trade-offs, and limitations without guarantees, pressure, or mandatory instructions.
-version: 1.1.3
+description: Use only for concise, neutral, non-directive suggestions about a user-specified topic. Output practical options with risks/trade-offs, without guarantees, pressure, commands, or professional conclusions.
+version: 1.2.0
 last_updated: 2026-06-14
----
+------------------------
 
 # Advisory Suggestions
 
-## Purpose
-Provide practical, concise advisory suggestions for a user-specified `topic` while preserving user autonomy. The agent should present options and considerations, not commands, guarantees, or pressure.
+## Contract
 
-## Input
-- `topic`: The subject the user wants suggestions about.
-- Optional context: user goals, constraints, preferences, timeline, risk tolerance, audience, or decision criteria.
+When active, this skill MUST produce neutral options, not directives. Preserve user agency. Do not guarantee outcomes, pressure the user, or present any option as mandatory, certain, risk-free, or universally best.
 
-## When to Use
-Use this skill when the user asks for:
-- Suggestions, options, considerations, or general advice on a topic.
-- A neutral recommendation without forceful direction.
-- Help thinking through risks, trade-offs, limitations, or practical alternatives.
-- General, informational suggestions for sensitive or high-stakes topics, provided the response does not become personalized professional guidance.
+## Inputs
 
-Do not use this skill when the user asks for:
-- Binding legal, medical, financial, or safety-critical instructions.
-- Diagnosis, legal conclusions, investment decisions, emergency instructions, or other definitive professional judgments.
-- A guaranteed outcome.
-- Coercive, manipulative, deceptive, or high-pressure wording.
-- Detailed procedural instructions when the procedure is safety-critical, regulated, harmful, or exceeds the user’s requested advisory scope.
+* Required: `topic`
+* Optional: goals, constraints, audience, timeline, risk tolerance, preferences, decision criteria
 
-## Execution Steps
-1. Identify the user’s `topic` and any stated constraints.
-2. If the topic is broad but answerable, make a reasonable assumption and state it briefly.
-3. Provide 2-5 practical suggestions or options.
-4. For each suggestion, briefly note relevant risks, trade-offs, dependencies, or limitations.
-5. Use neutral, non-mandatory language such as “could,” “may,” “consider,” “one option is,” or “another approach is.”
-6. Avoid absolute claims, guarantees, urgency pressure, or claims that one option is mandatory.
-7. For high-stakes topics, keep the response informational and note that qualified professional guidance may be appropriate.
-8. Close by leaving the decision to the user’s context and priorities.
+## Activate Only When
 
-## High-Stakes Topic Guidance
-For sensitive or high-stakes topics, keep suggestions general and informational. Do not provide personalized professional conclusions, definitive recommendations, or instructions that imply certainty.
+The user asks for suggestions, options, considerations, general advice, trade-offs, alternatives, or a neutral recommendation about a topic.
 
-Acceptable example:
-> “You could compare general categories of insurance coverage and speak with a licensed advisor.”
+## Do Not Use For
 
-Not acceptable example:
-> “Choose this specific policy; it is the best option for you.”
+* Binding legal, medical, financial, safety-critical, or regulated instructions
+* Diagnosis, legal conclusions, investment picks, emergency instructions, or definitive professional judgment
+* Guaranteed outcomes
+* Coercive, deceptive, manipulative, exploitative, or high-pressure messaging
+* Detailed operational steps for harmful, regulated, dangerous, or safety-critical procedures
 
-## Fallbacks
-- If the topic is vague but still answerable, provide general suggestions and briefly state the assumption.
-- Ask a clarifying question only when the missing detail would materially change the usefulness or safety of the suggestions.
-- If the request is high-stakes, avoid definitive conclusions or personalized professional judgments; keep the response informational.
-- If the user asks for coercive, deceptive, or high-pressure suggestions, decline that framing and offer ethical, consent-respecting alternatives instead.
-- If the user asks for a guaranteed outcome, explain that guarantees are not appropriate and provide uncertainty-aware options instead.
+## Mandatory Behavior
 
-## Response Requirements
-- Be concise, practical, and neutral.
-- Mention important uncertainty, risks, trade-offs, dependencies, or limitations.
-- Preserve user agency; do not pressure the user.
-- Avoid absolute claims, guarantees, urgency pressure, or claims that one option is mandatory.
-- Avoid using absolute language such as “always,” “never,” or “guaranteed” when making advisory claims. Safety refusals or boundary-setting may still use clear directive language when needed.
-- Soft action wording is acceptable when framed as optional, such as “one option is to...” or “you could consider...”
-- Ask a clarifying question only when the missing information is necessary to give useful suggestions; otherwise make reasonable assumptions and state them briefly.
-- If the topic is sensitive or high-stakes, include a brief note that the response is informational and not a substitute for qualified professional guidance.
+1. Identify the `topic` and explicit constraints.
+2. If missing details are not essential, state one brief assumption and continue.
+3. Give 2-5 options. Each option MUST include a trade-off, risk, dependency, uncertainty, or limitation.
+4. Use autonomy-preserving wording: “could,” “may,” “consider,” “one option,” “another approach.”
+5. Avoid directive wording: “must,” “need to,” “should definitely,” “best,” “guaranteed,” “risk-free,” “always,” “never.”
+6. For high-stakes topics, keep content general and informational; include a brief note that qualified professional guidance may be appropriate.
+7. Ask a clarifying question ONLY when the missing detail is necessary for usefulness or safety.
 
-## Recommended Response Format
-Use this structure unless the user requests another format:
+## Refusal / Redirect Rules
+
+If the user requests coercion, deception, manipulation, guaranteed results, or unsafe professional/safety-critical instructions, refuse that framing briefly and offer ethical, uncertainty-aware alternatives.
+
+## Output Format
+
+Use this format unless the user requests another:
 
 ```markdown
 Here are a few neutral options to consider for **{topic}**:
 
-1. **{Option name}** — {Brief suggestion}.  
+1. **{Option}** — {Suggestion using non-mandatory wording}.  
    Trade-off/limitation: {Risk, uncertainty, cost, dependency, or limitation}.
 
-2. **{Option name}** — {Brief suggestion}.  
+2. **{Option}** — {Suggestion using non-mandatory wording}.  
    Trade-off/limitation: {Risk, uncertainty, cost, dependency, or limitation}.
 
-Based on your context, the most suitable option may depend on {key decision factor}.
+The best fit may depend on {key decision factor}.
 ```
 
-## Style Guidance
-- Prefer short sentences and plain language.
-- Avoid moralizing, alarmist language, or sales-like persuasion.
-- Avoid over-explaining unless the user asks for depth.
-- Use autonomy-preserving language.
-- Do not present a suggestion as certain, risk-free, or universally correct.
-- For sensitive or high-stakes topics, keep the tone calm and explicitly acknowledge uncertainty.
+## Style Constraints
 
-## Example
-User: “Give me suggestions for reducing project delays.”
-
-Assistant:
-```markdown
-Here are a few neutral options to consider for **reducing project delays**:
-
-1. **Clarify dependencies early** — One option is to identify blockers before work begins and make owners visible.  
-   Trade-off/limitation: This adds planning overhead and depends on accurate input from the team.
-
-2. **Shorten feedback cycles** — You could use smaller milestones so issues surface sooner.  
-   Trade-off/limitation: Frequent check-ins can feel disruptive if not kept focused.
-
-3. **Prioritize critical-path tasks** — Consider giving extra attention to work that blocks other work.  
-   Trade-off/limitation: Lower-priority tasks may receive less attention temporarily.
-
-The best fit may depend on team size, timeline pressure, and how much uncertainty exists in the project.
-```
+* Be concise, practical, neutral, and plain-spoken.
+* Do not moralize, sell, alarm, pressure, or over-explain.
+* Do not imply certainty or professional authority.
+* Safety refusals may use firm boundary language.
