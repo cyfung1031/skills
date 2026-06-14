@@ -1,31 +1,43 @@
-# R Review 0003: Direct repository asset modification rule
+# R Review 0003: Documentation package readiness
 
 ## Scope
 
-Reviewed user clarification: when K is ready to write code or modify project source files after an approved spec, K should directly modify actual source code files in the repository workspace and make the local Git commit.
+Reviewed the revised skill package after K addressed R-0002 findings, including mandatory templates, bootstrap behavior, context notes, status format, and example records.
 
 ## Summary
 
-Changes requested. The skill must explicitly prefer direct repository working-tree modification over detached artifact staging once the relevant spec or plan is approved.
+Approved with notes. The package is suitable as a reusable tool-agnostic workflow. Future package revisions should keep examples synchronized with the mandatory templates.
+
+## Evidence
+
+- Branch: `main`
+- Git status: clean in example workspace
+- Recent commits reviewed: `example-k0002`, `example-k0003`
+- Files reviewed: `SKILL.md`, `INSTALLATION.md`, `COMPLETE-PACKAGE-GUIDE.md`, `.ai-dev-loop/status.md`, `.ai-dev-loop/context/0003-context.md`
+- Commands run: `grep -R "## Evidence" .ai-dev-loop/reviews .ai-dev-loop/responses`; `find .ai-dev-loop -maxdepth 3 -type f`
+- Validation result: pass for documentation/example consistency in this example
 
 ## Findings
 
-### Finding R-0003-01: Implementation target must be the real repository workspace
+### Finding R-0003-01: Keep examples synchronized with templates
 
-- Severity: High
+- Severity: Note
+- Status: Accepted risk
 - Type: Process issue
-- Location: Core Principles; Role K; Phase 2 Implementation; Quality Gates
-- Details: The skill previously required local commits but did not explicitly state whether K should edit the actual repository source files or stage changes in generated artifacts first. The user clarified the correct behavior is direct modification of repository source files followed by a local commit.
-- Required action: Add a direct asset modification rule: after approved spec/plan, K modifies actual repo files in place, validates the real working tree, and commits locally on the same branch. Artifact-only staging or detached copies are not the implementation target unless explicitly required.
+- Location: `examples/.ai-dev-loop/`
+- Details: Examples are part of the teaching surface for the skill and must remain compliant whenever templates change.
+- Required action: Future package revisions should update all examples in the same package revision when the required R or K template changes.
 
 ## Clarifications Needed
 
-None. User answered yes to direct modification.
+None.
 
 ## Approval Status
 
-Changes requested.
+- Spec/Plan Status: Approved
+- Implementation Status: Approved with notes
+- Overall Status: Approved with notes
 
 ## Next Expected K Action
 
-Update `SKILL.md`, mirror it to `.ai-dev-loop/SKILL.md`, update status/context, and commit the changes locally.
+No corrective action is required before use. Future package revisions should keep examples and templates synchronized.

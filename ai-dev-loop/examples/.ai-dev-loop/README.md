@@ -1,22 +1,13 @@
-# AI Development Loop Coordination
+# Example AI Development Loop Records
 
-This directory is the durable coordination area for the dual-role software development loop.
+> All commits and command results in this example directory are illustrative, not actual package repository history.
 
-## Location
+These records are illustrative examples for learning the package. They are not generated from a real public git history; commit hashes such as `example-k0001` are intentionally labeled placeholders. Use the structure, headings, and evidence style as the model, not the placeholder hashes.
 
-The coordination directory is located at the workspace root as `.ai-dev-loop/`.
+## Example `.ai-dev-loop/` Records
 
-## Roles
+This directory is a generated example transcript for the `ai-dev-loop` skill package. It demonstrates compliant R/K records, status synchronization, context notes, and a decisions directory.
 
-- R records reviews, audits, approval status, and clarification needs in `reviews/`.
-- K records responses, spec updates, implementation notes, and validation results in `responses/`.
-- Durable decisions and human-escalation blockers are recorded in `decisions/`.
-- Compact role-local state summaries are recorded in `context/`.
+The commit hashes are illustrative (`example-*`) and are not expected to exist in your repository. When using the skill in a real project, replace these examples with records created from your actual branch, files, commands, commits, and validation results.
 
-## Git Requirement
-
-Normal operation requires local git commits on the current working branch. If the workspace is not already a git repository, initialize git at the workspace root during bootstrap.
-
-## Context Policy
-
-R and K must reload state from durable files and git history each turn. Chat context is not authoritative unless copied into committed `.ai-dev-loop/` markdown.
+For a reusable empty starting point, use `scripts/install-ai-dev-loop-template.py` from the package root, or follow the manual install commands in `QUICKSTART.md` or `INSTALLATION.md`. Do not copy these example records into a live project.

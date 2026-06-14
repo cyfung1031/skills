@@ -1,0 +1,951 @@
+# ai-dev-loop Reference Notes
+
+This file holds non-normative guidance. `SKILL.md` remains the source of truth.
+
+Use the loop when a repository benefits from a durable reviewer/implementer split:
+
+1. R reviews specs, plans, code, tests, and prior K responses.
+2. K responds to every finding, updates specs/code/tests, validates, and records evidence.
+3. Both roles update `.ai-dev-loop/status.md` after their turns.
+4. Git commits provide the audit trail when available.
+
+Keep role records compact. Preserve evidence, changed paths, commands, validation results, open findings, blockers, and approval state. Compress repeated rationale and stale background.
+
+---
+
+# Extended Operating Reference
+
+The root `SKILL.md` is intentionally compact to reduce always-loaded context. This file is optional expansion material for cases where compact rules need more detail. When this reference and `SKILL.md` conflict, `SKILL.md` is authoritative. Consult this file only when an edge case appears, degraded mode or release/package maintenance requires deeper detail, or a role turn cannot be completed confidently from `SKILL.md` alone.
+
+# Skill: Dual-Role Software Development Review and Implementation Loop
+
+## Purpose
+
+Use this skill when a software development workspace already contains specifications, implementation plans, roadmaps, tickets, or design notes, and the AI agent must autonomously drive development through two cooperating roles:
+
+- **R — Reviewer/Auditor**: reviews specifications, plans, and implementation work; identifies risks, gaps, contradictions, unclear requirements, and quality issues.
+- **K — Implementer/Keeper**: updates specifications, resolves reviewer feedback, implements code, tests changes, and records responses.
+
+The process is designed to work without requiring human decisions for normal review, clarification, implementation, and follow-up cycles. Human involvement is only required for blocked decisions explicitly outside the available specifications or project authority.
+
+## Tool-Agnostic Scope
+
+This skill is not specific to any single coding assistant. It can be used with any comparable repository-editing agent that can read files, edit the workspace, run validation commands, and create local git commits. Vendor-specific integrations, if any, are optional adapters rather than requirements.
+
+When a tool has its own skills, rules, memory, custom instructions, project policy files, or repository instruction mechanism, install or reference this `SKILL.md` there. When it does not, keep `SKILL.md` in the repository, preferably under `.ai-dev-loop/SKILL.md`, and instruct the agent to load it before working.
+
+Tool-specific commands, directories, or UI features are adapters only. The normative workflow is the repository-local process: durable `.ai-dev-loop/` records, real working-tree edits, validation evidence, synchronized `status.md`, and local git commits.
+
+
+## Canonical Status Model
+
+Use this exact status vocabulary in R reviews, K responses, context notes, decisions, and `status.md`.
+
+**Spec/Plan Status:**
+
+- `Not started`
+- `Changes requested`
+- `Approved for implementation`
+- `Approved with notes`
+- `Approved`
+- `Not applicable`
+
+**Implementation Status:**
+
+- `Not started`
+- `Changes requested`
+- `Pending implementation`
+- `Approved with notes`
+- `Approved`
+- `Not applicable`
+
+**Overall Status:**
+
+- `Blocked`
+- `Changes requested`
+- `Pending implementation`
+- `Approved with notes`
+- `Approved`
+
+Interpretation rules:
+
+- `Blocked` means a human decision, external access, missing authority, or unsafe product/security/legal/cost choice prevents safe progress.
+- `Changes requested` means K must update specs, code, tests, documentation, or coordination records before the reviewed artifact can be approved.
+- `Pending implementation` means the spec or plan is approved and K is authorized to implement, but the implementation has not yet been reviewed.
+- `Approved with notes` means K may continue without required corrective action; notes are advisory or future-facing only.
+- `Approved` means no further follow-up is required for the reviewed scope.
+
+Do not invent additional approval states. When a review covers both planning and implementation, always write all three fields: `Spec/Plan Status`, `Implementation Status`, and `Overall Status`.
+
+## Core Principles
+
+1. **Single working branch**
+   - R and K must work on the same current local branch.
+   - Do not switch branches unless the user explicitly requests it.
+   - Every meaningful change by either role must be committed locally when git is available and repository policy allows. If git is temporarily unavailable or repository policy prevents commits, record the limitation and exact uncommitted paths in the role record and status file.
+   - If the repository has an existing commit policy, follow it while preserving durable `.ai-dev-loop/` records and never claiming a commit exists when it does not.
+   - Use local commits as the shared history, audit trail, and rollback mechanism.
+
+2. **Markdown-based handoff**
+   - R records every review, audit, concern, clarification request, and final approval in markdown.
+   - K records every response, decision, spec update, implementation update, and test result in markdown.
+   - **Every role turn must write markdown.** An R turn is complete when the R review and synchronized status update are written and committed when policy allows. A K turn is complete when the K response, any repository changes, and synchronized status update are written and committed when policy allows. A full review-response cycle is complete only when required R and K records both exist, except when R records final approval with no required K follow-up.
+   - Markdown files are the durable conversation between R and K.
+
+3. **Role-local context, not chat-memory context**
+   - R and K must not rely on hidden chain-of-thought, chat memory, stale conversation context, or assumptions from prior turns.
+   - Each role must reconstruct current state from durable sources: git history, workspace files, `.ai-dev-loop/` records, specs, plans, code, and test results.
+   - Each role must explicitly cite or reference the durable files, commits, commands, and findings it used.
+   - If prior chat content matters, copy the relevant facts into `.ai-dev-loop/` markdown before relying on them.
+
+4. **Compressed context by default**
+   - Use the integrated Context Compressor rules in this skill to reduce token usage while preserving correctness.
+   - Prefer compact records, stable identifiers, summaries of command output, and exact file paths over repeated prose.
+
+5. **Autonomous loop**
+   - R and K continue the review-response loop until R has no further follow-up.
+   - K may then proceed to the next implementation step according to the existing implementation plan, roadmap, or specification priority.
+   - Respect the user's current requested scope. Do not proceed to the next roadmap item unless the user asked for autonomous continuation, the project instructions explicitly authorize it, or `status.md` already records that continuation scope.
+   - The AI should not ask the human to choose between ordinary engineering options when the workspace gives enough context to make a reasonable decision.
+
+6. **Spec-first discipline**
+   - Before implementation, R audits the relevant specifications and implementation plan.
+   - K resolves spec gaps before writing code when possible.
+   - If implementation reveals a spec issue, K updates the spec and records the reason.
+   - R then reviews both the spec and implementation changes.
+
+7. **Small, reversible steps**
+   - Prefer small commits with focused scope.
+   - Each commit should represent one review note, one response, one spec update, one implementation step, or one test/fix step.
+   - Avoid large mixed commits that combine unrelated review, spec, and code changes.
+
+8. **Direct repository asset modification after approval**
+   - After R approves the relevant specification, plan, or roadmap item, K must modify the actual project source files in the repository workspace directly.
+   - K must not implement in a detached artifact staging area, copied sandbox, generated patch-only file, or parallel shadow tree unless the user or repository instructions explicitly require that workflow.
+   - The real repository working tree is the source of truth. K validates and commits the actual modified source, tests, specs, and coordination markdown on the same local branch.
+   - Temporary files may be used only as scratch space and must not replace direct repository edits or local commits.
+
+## Workspace Conventions and Bootstrap Defaults
+
+Create a durable coordination directory if the workspace does not already define one:
+
+```text
+.ai-dev-loop/
+  README.md
+  reviews/
+  responses/
+  decisions/
+  context/
+  status.md
+```
+
+Recommended file naming:
+
+```text
+.ai-dev-loop/reviews/NNNN-r-review.md
+.ai-dev-loop/responses/NNNN-k-response.md
+.ai-dev-loop/decisions/NNNN-decision.md
+.ai-dev-loop/context/NNNN-context.md
+```
+
+Where `NNNN` is a zero-padded sequence number such as `0001`, `0002`, `0003`.
+
+If the repository already has a project-specific location for agent notes, ADRs, review logs, or implementation records, use that instead and document the chosen location in `.ai-dev-loop/README.md` or the existing equivalent.
+
+## Integrated Context Compressor
+
+Apply these rules whenever this skill is active. The goal is to reduce token usage in both thinking and writing without weakening the audit trail.
+
+### Operating mode
+
+- Use short, direct progress updates and markdown records.
+- State only current action, durable evidence, decisions, changed files, validation result, and next action.
+- Avoid restating stable instructions, accepted decisions, full logs, or old alternatives.
+- Prefer exact paths, sequence numbers, commit hashes, command names, and finding IDs.
+- Use compact records by default: target roughly 200-500 words for ordinary R/K records, shorter for routine approvals, longer only for high-risk evidence.
+- Ask at most one human clarification question when blocked; otherwise make a safe autonomous assumption and document it.
+
+### Context pruning
+
+Keep:
+
+- Current goal and latest user correction.
+- Constraints affecting safety, permissions, git, output format, specs, tests, or project scope.
+- Current approval state, blockers, and active findings.
+- Files changed, commands run, test status, and remaining work.
+- Non-obvious facts discovered from code, tools, specs, or prior durable records.
+
+Drop or compress:
+
+- Rejected alternatives after recording the decision.
+- Full command logs after summarizing as command + pass/fail/limited + key excerpt, diff, or failure line.
+- Repeated process explanations.
+- Large pasted content after extracting actionable facts.
+- Polite filler and redundant caveats.
+
+### Compact handoff format
+
+Use this format for role-local summaries, continuation notes, or status compression:
+
+```markdown
+Goal: <current objective>
+State: <approval state and active phase>
+Decisions: <durable decisions only>
+Changed: <paths and commits>
+Verified: <commands and result summary>
+Next: <single next action>
+Risks: <blockers or none>
+```
+
+For brief progress updates, use:
+
+```markdown
+Now: <current action>
+Found: <new durable fact>
+Next: <next action>
+```
+
+Omit empty fields. In simple role turns, put the compact handoff in the K `Compact Context` section or in `status.md`; create a separate context note only when the context note creation gate below is met.
+
+### Role-switch reload prompts
+
+Use minimal reload prompts instead of pasting old records:
+
+- R reload: `Read SKILL.md, status.md, latest K response, changed files, git diff/status, then write the next R review.`
+- K reload: `Read SKILL.md, status.md, active R review, relevant files, git status, then address each finding and write the next K response.`
+
+Do not load `REFERENCE.md` unless the turn hits an edge case, package maintenance, degraded mode, context compression, human escalation, or uncertainty.
+
+### Compression boundary
+
+Compression must never remove:
+
+- Open findings or blocker rationale.
+- Test failures, skipped validations, or environment limitations.
+- Commit hashes and changed file paths.
+- Human decisions or user-provided constraints.
+- Approval status and required next role action.
+
+
+## Workspace Bootstrap and Degraded Mode
+
+Use these defaults when a workspace is empty, new, or not yet prepared for the loop.
+
+### Initial setup for an empty or new workspace
+
+If `.ai-dev-loop/` is missing, create it at the workspace root before the first R or K role record unless the repository already defines an equivalent coordination directory. Create at least:
+
+```text
+.ai-dev-loop/
+  README.md
+  reviews/
+  responses/
+  decisions/
+  context/
+  status.md
+```
+
+If no specs, plans, roadmap, tickets, or design notes exist, do not invent product requirements. Create bootstrap coordination records stating that the project lacks reviewable requirements, record the safe stopping point, and ask for or point to project requirements only if no durable source exists.
+
+### Git bootstrap
+
+Before initializing git, detect whether the current directory is already inside an existing repository, worktree, or submodule:
+
+```bash
+git rev-parse --show-toplevel
+```
+
+If that command succeeds, use the reported repository root for normal operation. Do not run `git init` merely because `.git/` is absent in the current directory; in worktrees and submodules, `.git` can be a file, and nested project folders can inherit a parent repository.
+
+Only run `git init` if `git rev-parse --show-toplevel` fails, the current directory is confirmed to be the intended project root, and the directory is not `$HOME`, `/`, `/mnt/data`, or another broad container or workspace parent. Treat the current directory as confirmed only when it contains a project manifest such as `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, a root `README.md` plus source directories, or an explicit user statement that this directory is the project root. Otherwise enter degraded mode and ask for the intended project root before initializing git:
+
+```bash
+git init
+git status --short
+git branch --show-current
+```
+
+Then create the initial coordination files and commit them if git identity and permissions allow. Automatic `git init` is allowed only at a confirmed project root because this skill relies on local commits for auditability and rollback. Do not push or configure remotes unless the user explicitly asks.
+
+### Non-git fallback and degraded mode
+
+If git is unavailable, `git init` fails, git identity is missing, or commits cannot be created, continue only in degraded mode:
+
+- Record the limitation in the current R/K record and `status.md`.
+- List the exact changed or uncommitted paths.
+- Continue with safe documentation, review, planning, and bootstrap work.
+- Do not proceed with implementation changes beyond safe documentation/bootstrap work unless the user explicitly authorizes degraded mode for code changes.
+- Never claim a commit exists when it does not. Use `pending current commit`, `not committed: <reason>`, or `not applicable`.
+
+### Single-Agent Alternation Rules
+
+A single AI agent may perform both R and K roles, but each role turn must be treated as a separate durable act:
+
+- R writes only R review records and status updates for the R turn.
+- K writes only K response records, implementation/spec/test changes, and status updates for the K turn.
+- Do not merge R findings and K responses into one markdown file unless the user explicitly asks for a summary outside the formal loop.
+- Commit each role turn separately when git is available.
+
+## Required Git Behavior
+
+Before starting work:
+
+```bash
+git status --short
+git branch --show-current
+```
+
+Rules:
+
+- Do not discard user changes.
+- Do not overwrite uncommitted changes unless they were created by the current role in the current loop and the change is intentionally being amended.
+- If unrelated uncommitted changes exist, work around them when possible and record the constraint.
+- Every R markdown update must be committed locally when git is available and repository policy allows.
+- Every K markdown update must be committed locally when git is available and repository policy allows.
+- Every spec update, implementation change, and test update must be committed locally when git is available and repository policy allows.
+- If commits cannot be created because the environment lacks git identity, permissions, or repository access, the role must record this as a validation limitation and list the exact files that remain uncommitted.
+
+Suggested commit prefixes:
+
+```text
+R: audit specs for <topic>
+R: review implementation for <topic>
+R: approve <topic>
+K: respond to review for <topic>
+K: update specs for <topic>
+K: implement <topic>
+K: fix review findings for <topic>
+K: add tests for <topic>
+```
+
+## Role R: Reviewer/Auditor
+
+R is responsible for independent review and audit.
+
+### R must review
+
+- Existing specifications
+- Implementation plans or roadmaps
+- Acceptance criteria
+- Architecture and design assumptions
+- Dependencies and integration points
+- Security, privacy, reliability, and data risks
+- Test coverage expectations
+- Implementation changes made by K
+- Whether K's response fully resolves prior review comments
+
+### R output format
+
+R writes a markdown review file with this structure:
+
+```markdown
+# R Review NNNN: <topic>
+
+## Scope
+
+Describe the files, specs, plans, commits, or implementation areas reviewed.
+
+## Summary
+
+State the overall review result.
+
+## Evidence
+
+- Branch: <branch-name>
+- Git status: <clean, dirty, or limited summary>
+- Recent commits reviewed: <commit hashes or none>
+- Files reviewed: <paths>
+- Commands run: <exact commands or none>
+- Validation result: <pass, fail, limited, or not applicable>
+
+## Findings
+
+### Finding R-NNNN-01: <title>
+
+- Severity: Critical|High|Medium|Low|Note
+- Status: Open | Closed | Accepted risk
+- Type: Spec gap | Implementation issue | Test gap | Design risk | Clarification | Process issue
+- Location: <file/path or commit reference>
+- Details: <clear explanation>
+- Required action: <specific requested action>
+
+## Clarifications Needed
+
+List questions only when the workspace does not contain enough information to make a safe autonomous decision.
+
+## Approval Status
+
+Use both fields when the review covers both planning/spec status and implementation status:
+
+- Spec/Plan Status: Not started | Changes requested | Approved for implementation | Approved with notes | Approved | Not applicable
+- Implementation Status: Not started | Changes requested | Pending implementation | Approved with notes | Approved | Not applicable
+- Overall Status: Blocked | Changes requested | Pending implementation | Approved with notes | Approved
+
+Overall status must be one of:
+
+- Blocked: human input, external access, or a durable decision is required before safe progress can continue.
+- Changes requested: K must update specs, code, tests, or documentation.
+- Pending implementation: the spec/plan is approved and K is authorized to implement, but no implementation has been reviewed yet.
+- Approved with notes: K may proceed only when notes require no follow-up before continuing.
+- Approved: No further follow-up.
+
+Do not use `Approved with notes` when any Critical, High, or Medium finding has a required K action.
+Use `Changes requested` when K must correct the artifact under review before it can proceed.
+Use `Pending implementation` when the spec/plan is approved, no correction is required before implementation starts, and R's findings are implementation requirements or documentation follow-up for K to perform next.
+For spec audits that authorize implementation but still require K work, use `Spec/Plan Status: Approved for implementation` and `Implementation Status: Not started`, with overall status `Pending implementation` unless the spec/plan itself needs correction.
+
+## Next Expected K Action
+
+State what K should do next.
+```
+
+### R decision rules
+
+R should not block on minor style issues unless they affect correctness, maintainability, or project conventions.
+
+R may approve when:
+
+- The relevant specification is clear enough.
+- The implementation matches the specification.
+- Tests or validation are adequate for the change size and risk.
+- No unresolved blocker, high, or medium findings remain.
+
+R must continue the loop when:
+
+- Requirements are contradictory.
+- Acceptance criteria are missing for a material behavior.
+- Implementation diverges from the plan.
+- Tests do not cover important behavior.
+- Security, data loss, migration, or compatibility risks are unresolved.
+
+## Role K: Implementer/Keeper
+
+K is responsible for responding to R, updating specs, implementing code, and validating changes.
+
+### K must do
+
+- Read R's latest markdown review.
+- Address every finding explicitly.
+- Update specifications when the issue is a spec gap.
+- Update implementation when the issue is a code or behavior gap.
+- Update tests when validation is insufficient.
+- Record responses in markdown.
+- Commit every meaningful response and change locally.
+- After approved spec/plan review, modify the actual repository source files directly and commit those real workspace changes locally.
+
+### K response format
+
+K writes a markdown response file with this structure:
+
+```markdown
+# K Response NNNN: <topic>
+
+## Review Addressed
+
+Reference the R review file and relevant commit.
+
+## Summary
+
+Briefly summarize the response.
+
+## Evidence
+
+- Branch: <branch-name>
+- Git status: <clean, dirty, or limited summary>
+- Relevant commits: <commit hashes>
+- Files changed: <paths or none>
+- Commands run: <exact commands or none>
+- Validation result: <pass, fail, limited, or not applicable>
+- Known limitations: <limitations or none>
+
+## Finding Responses
+
+### Response to R-NNNN-01
+
+- Status: Addressed | Partially addressed | Not addressed | Accepted risk
+- Changes made: <what changed>
+- Evidence: <paths, commits, commands, validation, or accepted-risk rationale>
+- Notes: <reasoning, tradeoffs, or follow-up>
+
+## Spec Updates
+
+List specification or plan updates, if any.
+
+## Implementation Updates
+
+List implementation updates, if any.
+
+## Tests and Validation
+
+List commands run and results.
+
+## Remaining Questions
+
+Only include questions that cannot be resolved from the workspace context.
+
+## Compact Context
+
+Use the integrated Context Compressor handoff format. Include only durable state that R needs for the next review.
+
+## Next Expected R Action
+
+Ask R to review the response, updated specs, implementation, and tests.
+```
+
+### K decision rules
+
+K should autonomously choose the next action when the existing roadmap, implementation plan, or specifications imply priority.
+
+K may update specifications without human confirmation when:
+
+- The update resolves ambiguity using existing project conventions.
+- The update aligns with the implementation plan or roadmap.
+- The update narrows behavior rather than introducing unrelated scope.
+- The update is documented in the K response and committed.
+
+K must avoid proceeding silently when:
+
+- The change would materially alter product direction.
+- The change introduces a new external dependency with unclear approval.
+- The change may delete or migrate user data.
+- The change has security, legal, compliance, or cost implications not addressed by existing specs.
+
+In those cases, K records the blocker in markdown and stops at a safe boundary.
+
+## Role-Local Context Protocol
+
+R and K must treat each role turn as if it starts with limited, potentially stale chat context. Before writing a role record, each role must reload state from durable artifacts.
+
+### Required state sources
+
+Each R turn reads, as applicable:
+
+1. `git status --short` and recent git log.
+2. Latest `.ai-dev-loop/status.md`.
+3. Latest K response for the active sequence.
+4. Relevant specs, plans, code, tests, and validation output recorded by K.
+5. Prior R findings only when still open or referenced by status.
+
+Each K turn reads, as applicable:
+
+1. `git status --short` and recent git log.
+2. Latest `.ai-dev-loop/status.md`.
+3. The active R review file.
+4. Relevant specs, plans, code, tests, and prior decisions.
+5. The latest compact context note, if present.
+
+### Context notes
+
+Create or update `.ai-dev-loop/context/NNNN-context.md` when a round contains enough information that future R/K turns may otherwise waste tokens or rely on stale chat context. Context notes use the compact handoff format from the integrated Context Compressor section.
+
+Context notes are summaries, not substitutes for source files. R and K may use them to find relevant durable evidence, but must verify critical facts against files, commits, or commands before approval or implementation.
+
+### Context note creation gate
+
+Create a context note rather than leaving `.ai-dev-loop/context/` empty when any of the following is true:
+
+- A roadmap item, milestone, or stage gate is approved or handed off.
+- A loop has reached three or more R/K records for the same item.
+- The latest status file has become long enough that a future role would need to reread many old records to find the active state.
+- The role is about to switch from spec review to implementation, or from implementation to review.
+- The user provides material constraints in chat that are not already captured in repository files.
+
+The context note should be compact and current. It must include only durable handoff facts: goal, state, decisions, changed paths/commits, validation, next action, and risks. It must not replace status, R/K records, specs, or code.
+
+### Decision record gate
+
+Create `.ai-dev-loop/decisions/NNNN-decision.md` only for durable decisions that affect future work and cannot be safely inferred from the approved spec, code, or R/K records. Examples include product-scope choices, security or data-risk tradeoffs, dependency approvals, architecture pivots, accepted deferrals, or human escalations.
+
+Do not create fake decision records just to make the `decisions/` directory non-empty. If there are no durable decisions, leave the directory empty or include only a `README.md` explaining that decision records are created on demand.
+
+Decision records use this compact structure. A blocker file may use `NNNN-blocker.md` with the same evidence fields plus the human-escalation fields below:
+
+```markdown
+# Decision NNNN: <topic>
+
+## Status
+
+Proposed | Accepted | Superseded | Blocked
+
+## Context
+
+<why a durable decision is needed>
+
+## Decision
+
+<the decision>
+
+## Consequences
+
+<expected impact, risks, follow-up>
+
+## Evidence
+
+- Related R/K records: <paths>
+- Related commits: <hashes or none>
+- Human input: <reference or none>
+```
+
+## Autonomous Workflow
+
+### Phase 1: Specification and Plan Review
+
+1. Inspect repository status and current branch.
+2. Locate specifications, implementation plans, roadmap files, tickets, or design documents.
+3. R reviews the relevant spec and implementation plan.
+4. R writes a review markdown file.
+5. R updates `status.md` and commits the review and status together when possible.
+6. K reads R's review.
+7. K updates specs, plans, or clarification notes as needed.
+8. K writes a response markdown file.
+9. K updates `status.md` and commits the response, status, and any spec changes together when possible.
+10. Repeat until R records `Approved` or `Approved with notes` with no required follow-up.
+
+### Phase 2: Implementation
+
+1. K selects the next implementation item from the approved plan or roadmap only if the user requested autonomous continuation, project instructions authorize it, or `status.md` already records that continuation scope.
+2. K modifies the actual project files in the repository workspace directly.
+   - Source files, tests, configs, specs, and docs are changed in place.
+   - Do not use artifact-only staging, copied source trees, or patch-only outputs as the implementation target unless explicitly required by project instructions.
+   - Generated artifacts may be produced only when they are normal repository outputs required by the project workflow.
+3. K implements the smallest coherent change.
+4. K adds or updates tests and documentation as appropriate.
+5. K runs relevant validation commands against the real repository working tree.
+6. K records implementation notes and validation results in markdown.
+7. Commit code, tests, docs, and K notes locally on the same branch.
+
+### Phase 3: Implementation Review
+
+1. R reviews the implementation against the approved specification and plan.
+2. R records findings, clarification needs, or approval in markdown.
+3. R updates `status.md` and commits the review and status together when possible.
+4. K addresses every finding.
+5. K records responses and validation in markdown.
+6. K updates `status.md` and commits the response, status, and changes together when possible.
+7. Repeat until R has no further follow-up.
+
+### Phase 4: Next Roadmap Item
+
+After R approves the completed implementation item:
+
+1. K marks the item complete in the status file or project tracker if available.
+2. Commit the status update.
+3. K selects the next implementation item according to the roadmap or plan only if the user requested autonomous continuation, project instructions authorize it, or `status.md` already records that continuation scope.
+4. Return to Phase 2.
+
+## Status Tracking
+
+Maintain or update `.ai-dev-loop/status.md` unless the project already has an equivalent tracker.
+
+Suggested format:
+
+```markdown
+# AI Development Loop Status
+
+## Current Branch
+
+<branch-name>
+
+## Current Focus
+
+<spec, feature, ticket, or roadmap item>
+
+## Latest R Review
+
+<path and commit>
+
+## Latest K Response
+
+<path and commit>
+
+## Latest Context Note
+
+<path and commit, or none>
+
+## Decisions
+
+- <decision path and status, or none>
+
+## Approval State
+
+- Spec/Plan Status: Not started | Changes requested | Approved for implementation | Approved with notes | Approved | Not applicable
+- Implementation Status: Not started | Changes requested | Pending implementation | Approved with notes | Approved | Not applicable
+- Overall Status: Blocked | Changes requested | Pending implementation | Approved with notes | Approved
+
+## Completed Items
+
+- <item> — <commit>
+
+## Next Expected Role Action
+
+<next R or K action>
+
+## Next Item
+
+<next implementation item from roadmap or plan>
+
+## Blockers
+
+- <blocker or none>
+```
+
+### Status file ownership
+
+To avoid role confusion and accidental overwrites, R and K own different sections of `.ai-dev-loop/status.md`:
+
+- **R owns:** `Latest R Review`, R-side `Approval State`, open findings summary, and review blocker references.
+- **K owns:** `Latest K Response`, `Completed Items`, `Next Item`, implementation/test summaries, and K-side blocker references.
+- **Shared but append-only:** `Blockers`, `Decisions`, and compact context references. Do not delete another role's entry unless a later committed record explicitly resolves it.
+- **Both roles may update:** `Current Focus` only when the change follows an approved plan or recorded decision.
+
+Prefer appending dated/numbered status bullets only while they remain useful. When `Completed Items` grows beyond the active work, archive resolved history into `context/` or `decisions/` and keep `status.md` focused on current state, latest R/K paths, approval state, active blockers, next action, and commit hashes.
+
+### Commit-hash timing note
+
+A status file cannot always know the hash of the commit that is about to introduce the status update. In that case, record the path plus `pending current commit`, commit the files, and let the next role turn replace or supplement it with the actual hash if useful. Do not invent commit hashes.
+
+
+## Loop Termination Criteria
+
+A review-response loop ends only when R records:
+
+```text
+Overall Status: Approved
+```
+
+or
+
+```text
+Overall Status: Approved with notes
+```
+
+and the notes do not require K follow-up before continuing.
+
+If R records `Changes requested` or `Pending implementation`, K must respond or implement before moving forward. If R records `Blocked`, K must create or update a blocker/decision record and stop at a safe boundary unless the missing information is later found in durable workspace context.
+
+## Circuit Breaker for Loop Divergence
+
+The loop must not continue indefinitely. Trigger a circuit breaker and write `.ai-dev-loop/decisions/NNNN-blocker.md` when any of these occur:
+
+- The same finding is rejected or re-opened after **three K resolution attempts**.
+- R and K disagree twice about whether a finding is resolved and the disagreement depends on product intent, risk tolerance, or external constraints absent from the workspace.
+- Two consecutive rounds make no material change to specs, code, tests, or decision evidence.
+- The loop exceeds **six R/K rounds** for one roadmap item without approval.
+
+When the circuit breaker trips, K writes the blocker file first, records the safe stopping point, commits it, and stops for human input.
+
+## Handling Clarifications Without Human Involvement
+
+When R asks for clarification, K should first try to answer using:
+
+1. Existing specifications
+2. Implementation plans
+3. Roadmap files
+4. Existing code behavior
+5. Tests
+6. README or developer documentation
+7. Prior R/K markdown records
+8. Project conventions visible in the repository
+
+K should update the relevant markdown and, when appropriate, the specification itself.
+
+Only escalate to the human when the decision cannot be made safely from repository context.
+
+## Human Escalation Criteria
+
+Stop and ask for human input only when all of the following are true:
+
+- The issue blocks safe progress.
+- The workspace does not contain enough information to decide.
+- Choosing incorrectly could cause material product, data, security, compliance, cost, or user-facing impact.
+
+When escalating, write a markdown blocker note first and commit it locally.
+
+Use this format:
+
+```markdown
+# Blocker NNNN: <topic>
+
+## Decision Needed
+
+<specific decision>
+
+## Why Autonomous Decision Is Unsafe
+
+<reason>
+
+## Options Considered
+
+1. <option, pros, cons>
+2. <option, pros, cons>
+
+## Recommended Option
+
+<recommendation if any>
+
+## Current Safe Stopping Point
+
+<what has been completed and committed>
+```
+
+## Record Completeness and Status Synchronization
+
+### Mandatory template completeness
+
+Every R review and K response must include all headings in the required template.
+If a section has no content, write `None.` rather than omitting the section.
+A role record is incomplete if any required heading is missing.
+
+### Evidence block
+
+Every R review and K response must include an Evidence section with durable facts used by the role:
+
+- Branch
+- Git status
+- Relevant commits
+- Files reviewed or changed
+- Commands run
+- Validation result
+- Known limitations when applicable
+
+Do not claim a command passed unless the exact command and summarized result are recorded.
+
+### Status synchronization gate
+
+After writing any R review or K response, update `.ai-dev-loop/status.md` before the role turn is considered complete. Commit the role record and status update together when possible.
+The status file must reference the latest R review and latest K response that exist at the end of the role turn.
+The role turn is incomplete if `.ai-dev-loop/status.md` is stale.
+
+The status update must include:
+
+- latest R review path and associated commit when known; use `pending current commit` only inside the commit that first introduces the review
+- latest K response path and associated commit when known; use `pending current commit` only inside the commit that first introduces the response
+- latest context note path and associated commit when known
+- active decision records or `none`
+- current approval state
+- next expected role action
+- active blockers or `none`
+
+### Approval status precision
+
+Use `Approved with notes` only when no K follow-up is required before continuing.
+If R identifies any Critical, High, or Medium finding requiring correction to the reviewed artifact, the overall approval status must be `Changes requested` or `Blocked`.
+If the spec/plan is approved and the findings are implementation requirements rather than corrections to the plan, use `Pending implementation`.
+When a spec or plan is approved but implementation remains to be done, separate the statuses:
+
+```markdown
+- Spec/Plan Status: Approved for implementation
+- Implementation Status: Not started
+- Overall Status: Pending implementation
+```
+
+This avoids confusing authorization to implement with final implementation approval.
+
+## Quality Gates
+
+Before R approval, ensure:
+
+- Specs and implementation agree.
+- All R findings are addressed or explicitly approved as deferred.
+- Tests are added or updated for changed behavior where practical.
+- Validation commands and results are recorded.
+- Local commits exist for R and K changes.
+- Implementation changes, when present, were applied directly to the repository working tree rather than only to staged artifacts or detached copies.
+- The status file is current.
+- A context note exists when the context creation gate is triggered.
+- A decision record exists when the decision record gate is triggered.
+- No unrelated user changes were overwritten.
+
+## Recommended Command Pattern
+
+Use commands appropriate to the project. Common examples:
+
+```bash
+git status --short
+git log --oneline -n 10
+```
+
+For validation, prefer the project's documented commands. Examples may include:
+
+```bash
+npm test
+npm run lint
+npm run typecheck
+pytest
+cargo test
+go test ./...
+make test
+```
+
+Record exact commands and results in K response markdown.
+
+## Failure Handling
+
+If a command fails:
+
+1. Record the exact command and summarized failure in K's markdown response.
+2. Determine whether it is caused by K's changes, pre-existing workspace state, flaky tests, missing dependencies, or environment limitations.
+3. Fix issues caused by K's changes when possible.
+4. Commit the fix and updated response.
+5. If failure is pre-existing, flaky, or environmental, document evidence: baseline command, affected tests, why unrelated, and any safe workaround.
+6. R may grant `Approved with notes` only when evidence shows the failure is unrelated to K's changes and the changed behavior has adequate alternative validation.
+7. R must block when the failure prevents validation of the changed behavior, hides a possible regression, or creates security/data-loss risk.
+
+## Commit Discipline Examples
+
+Example review commit:
+
+```bash
+git add .ai-dev-loop/reviews/0001-r-review.md .ai-dev-loop/status.md
+git commit -m "R: audit payment retry implementation plan"
+```
+
+Example response/spec commit:
+
+```bash
+git add specs/payment-retry.md .ai-dev-loop/responses/0001-k-response.md .ai-dev-loop/status.md
+git commit -m "K: respond to payment retry review"
+```
+
+Example implementation commit:
+
+```bash
+git add src tests .ai-dev-loop/responses/0002-k-response.md .ai-dev-loop/status.md
+git commit -m "K: implement payment retry backoff"
+```
+
+Example approval commit:
+
+```bash
+git add .ai-dev-loop/reviews/0003-r-review.md .ai-dev-loop/status.md
+git commit -m "R: approve payment retry implementation"
+```
+
+## Operating Instruction for the AI Agent
+
+When this skill is active, operate as both R and K in alternating turns. Maintain role separation in written markdown records even though the same AI agent may perform both roles.
+
+Never skip the R/K record merely because the same agent can infer the state internally. The markdown records and local commits are required outputs of the process.
+
+Use compressed records by default. Preserve durable facts, open findings, decisions, commit hashes, file paths, validation results, and next actions; omit redundant explanation.
+
+Proceed autonomously through review, response, implementation, and follow-up loops until one of these occurs:
+
+- The current roadmap item is approved and the next item can begin.
+- The roadmap is complete.
+- A human escalation criterion is met.
+- A technical limitation prevents safe continuation.
+
+Always leave the repository in a traceable state with committed local history for every completed R or K action when repository policy allows; otherwise record the policy limitation and exact uncommitted paths.
+
+## v1.3.1 Token-Efficiency and Packaging Notes
+
+This revision keeps durable R/K separation, evidence-first reviews, synchronized status, git discipline, degraded-mode honesty, and optional reference material. It also fixes the prior validation/package mismatch:
+
+- `SKILL.md` remains the compact authoritative policy and now fits the validator budget.
+- `REFERENCE.md` remains optional and skippable for simple turns.
+- R/K templates remain canonical and auditable.
+- Context compression summarizes logs without deleting risk evidence.
+- Resolved `status.md` history may move into context or decision notes.
+- Release zips use the documented clean root layout.
+- Validator size checks remain provider-neutral: bytes, lines, and words, not model-specific tokenizers.

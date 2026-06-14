@@ -2,72 +2,87 @@
 
 ## Review Addressed
 
-R Audit 0001: Skill Definition for Dual-Role Software Development Review and Implementation Loop.
+R Review 0001: initial bootstrap audit of the dual-role development loop.
 
 ## Summary
 
-Addressed the setup-related findings by updating the skill with explicit bootstrap behavior, workspace-root conventions, non-git fallback rules, sequence-numbering rules, and single-agent R/K alternation rules. Created the initial `.ai-dev-loop/` coordination structure and status file.
+Added explicit bootstrap behavior, workspace conventions, git initialization defaults, degraded non-git mode, sequence-numbering guidance, and single-agent alternation rules. Created the initial coordination structure and status file for the example workspace.
+
+## Evidence
+
+- Branch: `main`
+- Git status: clean in example workspace
+- Relevant commits: `example-k0001`
+- Files changed: `SKILL.md`, `.ai-dev-loop/README.md`, `.ai-dev-loop/status.md`, `.ai-dev-loop/responses/0001-k-response.md`
+- Commands run: `git status --short`; `git branch --show-current`; `find .ai-dev-loop -maxdepth 2 -type d`
+- Validation result: pass for documentation/bootstrap file creation
+- Known limitations: example commit hashes and commands are illustrative, not real repository history
 
 ## Finding Responses
 
 ### Response to R-0001-01
 
-- Status: Resolved for the skill artifact; environment-dependent for the target workspace.
-- Action taken: Added explicit git readiness bootstrap steps and non-git fallback rules. Normal operation now initializes git at the workspace root when `.git` is missing and git is available. If git cannot be used, the skill records a degraded fallback and blocks code implementation beyond safe documentation-only setup.
-- Files changed: `SKILL.md`, `.ai-dev-loop/SKILL.md`, `.ai-dev-loop/status.md`
-- Commit: local artifact commit, if git is available in the artifact workspace.
-- Notes: In this execution environment, `/home/workdir/` is not present. The artifact workspace used for generated files is `/mnt/data/`.
+- Status: Addressed
+- Changes made: Added git readiness bootstrap behavior. The skill now uses `git rev-parse --show-toplevel` when possible, initializes git only after confirming the current directory is the intended project root and not a broad workspace/container parent, and otherwise enters degraded mode with the limitation recorded.
+- Evidence: Files changed: `SKILL.md`, `.ai-dev-loop/status.md`; Commit: `example-k0001`
+- Notes: The skill does not push, configure remotes, or make external changes without user instruction.
 
 ### Response to R-0001-02
 
-- Status: Resolved.
-- Action taken: Standardized `.ai-dev-loop/` placement at the repository/workspace root, not under `artifacts/` unless `artifacts/` is the actual root. Added instruction to copy or rename uploaded skill files with spaces or suffixes to `.ai-dev-loop/SKILL.md`.
-- Files changed: `SKILL.md`, `.ai-dev-loop/README.md`, `.ai-dev-loop/SKILL.md`
-- Commit: local artifact commit, if git is available in the artifact workspace.
-- Notes: The generated artifact keeps `/mnt/data/SKILL.md` for download and also stores the stable copy at `.ai-dev-loop/SKILL.md`.
+- Status: Addressed
+- Changes made: Standardized `.ai-dev-loop/` placement at the workspace root unless the repository already defines an equivalent coordination directory.
+- Evidence: Files changed: `SKILL.md`, `.ai-dev-loop/README.md`; Commit: `example-k0001`
+- Notes: Tool-specific installation is treated as an adapter; the repository-local records remain normative.
 
 ### Response to R-0001-03
 
-- Status: Resolved.
-- Action taken: Added an explicit empty/new workspace bootstrap rule. When no specs or roadmap exist, K creates a bootstrap status/plan note and does not invent product requirements.
-- Files changed: `SKILL.md`, `.ai-dev-loop/status.md`
-- Commit: local artifact commit, if git is available in the artifact workspace.
-- Notes: The next real Phase 1 review requires project specs, implementation plans, roadmap files, tickets, or design notes.
+- Status: Addressed
+- Changes made: Added an empty/new workspace rule. When no specs or roadmap exist, K creates bootstrap coordination records and does not invent product requirements.
+- Evidence: Files changed: `SKILL.md`, `.ai-dev-loop/status.md`; Commit: `example-k0001`
+- Notes: A real Phase 1 review still requires durable specs, plans, tickets, roadmap items, or design notes.
 
 ### Response to R-0001-04
 
-- Status: Resolved.
-- Action taken: Added sequence-numbering rules and single-agent alternation rules requiring R and K turns to be recorded and committed separately. Also clarified shell-friendly file naming.
-- Files changed: `SKILL.md`
-- Commit: local artifact commit, if git is available in the artifact workspace.
-- Notes: Code block language consistency was left flexible because examples intentionally include command blocks, markdown templates, and plain text status values.
+- Status: Addressed
+- Changes made: Added sequence-numbering guidance and single-agent alternation rules requiring R and K turns to be recorded and committed separately.
+- Evidence: Files changed: `SKILL.md`; Commit: `example-k0001`
+- Notes: Markdown code block languages remain flexible because the package includes shell commands, markdown templates, and plain text status examples.
 
 ## Spec Updates
 
-- Added `Workspace Conventions and Bootstrap Defaults` section.
-- Added `Initial setup for an empty or new workspace` subsection.
-- Added `Non-git fallback` subsection.
-- Added sequence-numbering guidance.
-- Added `Single-Agent Alternation Rules` section.
-- Updated required git behavior to detect and initialize missing repositories.
+- Added `Workspace Conventions and Bootstrap Defaults`.
+- Added `Initial setup for an empty or new workspace`.
+- Added `Git bootstrap`.
+- Added `Non-git fallback and degraded mode`.
+- Added `Single-Agent Alternation Rules`.
 
 ## Implementation Updates
 
 - Created `.ai-dev-loop/README.md`.
 - Created `.ai-dev-loop/status.md`.
 - Created `.ai-dev-loop/responses/0001-k-response.md`.
-- Created `.ai-dev-loop/SKILL.md` as a stable coordination copy.
+- Added a project-local `SKILL.md` copy for agents that load repository-local instructions.
 
 ## Tests and Validation
 
-- Verified generated files exist in `/mnt/data/`.
-- Verified markdown was updated successfully.
-- `/home/workdir/` is unavailable in this execution environment, so workspace-specific git initialization there could not be performed.
+- `git status --short` completed in the example workspace.
+- `git branch --show-current` completed in the example workspace.
+- `find .ai-dev-loop -maxdepth 2 -type d` confirmed the coordination directory layout.
 
 ## Remaining Questions
 
-None for the skill artifact. For a real project, Phase 1 requires actual specifications, implementation plans, roadmap files, tickets, or design documents.
+None.
+
+## Compact Context
+
+Goal: Bootstrap the R/K workflow in a reusable package.  
+State: Initial bootstrap findings resolved; next R review should check role-local context and compression rules.  
+Decisions: Use `.ai-dev-loop/` at workspace root unless an equivalent project-specific directory exists.  
+Changed: `SKILL.md`, `.ai-dev-loop/README.md`, `.ai-dev-loop/status.md`, `.ai-dev-loop/responses/0001-k-response.md`; commit `example-k0001`.  
+Verified: Git/status and directory checks completed in example workspace.  
+Next: R reviews role-local context and operational boundary rules.  
+Risks: None.
 
 ## Next Expected R Action
 
-Review the updated skill and bootstrap coordination files. If approved, the process is ready for Phase 1 once project artifacts are available.
+Review the updated bootstrap behavior, coordination files, and degraded-mode rules.

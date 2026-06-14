@@ -2,336 +2,364 @@
 
 ## Overview
 
-This is the **full original structure** of the AI Development Loop skill, including:
+This package contains a **tool-agnostic AI Development Loop** for software projects. It defines a durable two-role workflow:
 
-- The skill definition with complete rules and procedures
-- The coordination directory structure (`.ai-dev-loop/`)
-- Example review, response, and context records showing the R/K loop in action
-- Development status and decision history
+- **R — Reviewer/Auditor** reviews specifications, plans, implementation, risks, and evidence.
+- **K — Implementer/Keeper** responds to R, updates specs, implements code in the real repository, validates changes, and records evidence.
+
+The package is designed for any comparable repository-editing coding assistant. Named tools are only adapter examples; the workflow itself does not depend on a vendor-specific command, directory, or UI feature.
 
 ## What's Included
 
 ### Root Files
 
-**`SKILL.md`** (23 KB)
-- The complete skill definition for dual-role AI development
-- Full reference documentation for R and K roles
-- Context compression rules
-- Quality gates, validation procedures, and failure handling
-- Git discipline and commit patterns
+**`QUICKSTART.md`**
 
-**`README.md`**
-- Overview of the coordination directory
-- Roles and responsibilities
-- Git requirements
-- Context policy for R and K roles
+- Fastest safe install path
+- One-command template installer usage
+- Minimal assistant prompt for starting the loop
 
-**`status.md`**
-- Current development status
-- Latest R review and K response
-- Approval state (spec review and implementation review)
-- Completed items and next steps
-- Active blockers
+**`SKILL.md`**
+
+- Canonical compact operating instructions for normal R/K turns
+- Role responsibilities and mandatory markdown templates
+- Status synchronization, evidence, approval, degraded-mode, and git-discipline rules
+
+**`REFERENCE.md`**
+
+- Optional expansion for edge cases, release/package maintenance, blockers, and complex handoffs
+- Not required for simple role turns, preserving the compact-skill efficiency advantage
+
+**`INSTALLATION.md`**
+
+- Portable installation guidance
+- Project-local setup
+- Adapter notes for common classes of coding agents
+
+**`scripts/install-ai-dev-loop-template.py`**
+
+- Safe project-local installer for the `.ai-dev-loop/` template
+- Refuses broad directories and existing live `.ai-dev-loop/` directories by default
+
+**`scripts/validate-ai-dev-loop-package.py`**
+
+- Package invariant validator
+- Checks canonical approval statuses, required package files, required example headings, stale language, installer presence, clean packaging artifacts, absence of a duplicate root `.ai-dev-loop/`, and documented version consistency
+
+### Coordination Directory
+
+The installed project-local `.ai-dev-loop/` directory is the durable handoff layer. The distributable zip intentionally does not ship a duplicate root `.ai-dev-loop/` template folder; use the installer or the manual commands below to create it inside the target project. Because dot-directories are hidden by default in many file browsers, verify the generated directory exists after installation:
+
+```text
+/path/to/project/.ai-dev-loop/
+├── README.md
+├── SKILL.md
+├── REFERENCE.md
+├── status.md
+├── reviews/
+├── responses/
+├── context/
+└── decisions/
+```
 
 ### Example Review/Response Records
 
-These files show the skill being **improved by itself** through the R/K loop. They're examples of how the system works:
+The included examples show how the loop works in practice:
 
-#### Round 1: Bootstrap
-- **`reviews/`** - (no R review 0001; starts with K bootstrap)
-- **`responses/0001-k-response.md`** - K bootstraps the coordination directory and addresses R's implicit concerns
-
-#### Round 2: Role-Local Markdown & Context Compression
-- **`reviews/0002-r-review.md`** - R identifies gaps: missing every-round markdown requirement, stale chat context risk, no context compression, ambiguous boundaries
-- **`responses/0002-k-response.md`** - K resolves all findings: adds durable markdown requirement, role-local context rules, integrates context compressor, encodes circuit breaker defaults
-- **`context/0002-context.md`** - Compact summary of goals, decisions, and next actions
-
-#### Round 3: Direct Repository Asset Modification
-- **`reviews/0003-r-review.md`** - R clarifies: K must edit actual repository source files, not just artifacts
-- **`responses/0003-k-response.md`** - K adds the direct asset modification rule
-- **`context/0003-context.md`** - Compact summary of this decision
-
-### Directory Structure
-
-```
-.ai-dev-loop/
-├── README.md                    # Coordination guide
-├── SKILL.md                     # The skill definition
-├── status.md                    # Current status and approval state
-├── reviews/
-│   ├── 0002-r-review.md        # R's second review
-│   └── 0003-r-review.md        # R's third review
-├── responses/
-│   ├── 0001-k-response.md      # K's bootstrap response
-│   ├── 0002-k-response.md      # K's response to R review 0002
-│   └── 0003-k-response.md      # K's response to R review 0003
-├── context/
-│   ├── 0002-context.md         # Compact context after round 2
-│   └── 0003-context.md         # Compact context after round 3
-└── decisions/
-    # (Empty in this version; would contain escalated decisions and blockers)
-```
+- R writes review records under `reviews/`.
+- K writes response records under `responses/`.
+- Long-running or transition-heavy loops write compact handoffs under `context/`.
+- Blockers, escalations, and durable product or architecture decisions go under `decisions/`.
+- `status.md` is updated after each role turn.
 
 ## How to Use This Package
 
-### Option 1: Install as a Skill
+### Option 1: Fast template install, recommended
 
-1. Copy `SKILL.md` to your Claude Code skills directory:
-   ```bash
-   cp SKILL.md ~/.claude/skills/ai-dev-loop-SKILL.md
-   ```
-
-2. In a new project, activate the skill:
-   ```bash
-   claude --skill ai-dev-loop <project-path>
-   ```
-
-3. The skill will create its own `.ai-dev-loop/` directory and begin the R/K loop.
-
-### Option 2: Use as a Template for Your Project
-
-1. Copy the entire `.ai-dev-loop/` directory structure to your project root:
-   ```bash
-   cp -r .ai-dev-loop /path/to/your/project/
-   ```
-
-2. Update `status.md` with your project's current focus and specs.
-
-3. Start the first R review of your project.
-
-### Option 3: Extract and Install the Archive
+From the staged package directory:
 
 ```bash
-tar -xzf ai-dev-loop-complete.tar.gz
-cd .ai-dev-loop
-# Review the examples or copy to your project
+python3 scripts/install-ai-dev-loop-template.py /path/to/project
+```
+
+This installs `SKILL.md`, optional `REFERENCE.md`, placeholder `status.md`, and the required record directories while refusing broad paths and existing live loop state by default.
+
+Then tell your coding assistant:
+
+```text
+Use .ai-dev-loop/SKILL.md as the operating instructions for this repository.
+Bootstrap .ai-dev-loop/ if needed and continue from status.md.
+```
+
+This is the most portable approach because it works with nearly any coding agent.
+
+### Option 2: Tool-specific skill/rules installation
+
+If your tool supports global skills, custom rules, or persistent instructions, install or reference the same `SKILL.md` through that mechanism.
+
+Examples:
+
+```text
+Tools with skill/plugin support: install or reference this package through that mechanism.
+CLI coding agents: reference `SKILL.md` from the project prompt, repository instructions, or command invocation.
+IDE-based agents: add `SKILL.md` to project rules, workspace instructions, or pinned context.
+Other coding agents: place `SKILL.md` wherever the agent reads persistent instructions.
+```
+
+Tool-specific setup is only an adapter. The required workflow remains the same: `.ai-dev-loop/` records, synchronized `status.md`, evidence-backed validation, and local git commits when the environment permits them.
+
+### Option 3: Manual project-local instructions
+
+When you do not want to copy the full template, copy only the compact skill and optional reference:
+
+```bash
+test ! -e /path/to/project/.ai-dev-loop || { echo ".ai-dev-loop already exists"; exit 1; }
+mkdir -p /path/to/project/.ai-dev-loop/{reviews,responses,context,decisions}
+printf '%s\n' '# AI Development Loop Coordination Directory' > /path/to/project/.ai-dev-loop/README.md
+printf '%s\n' 'Create NNNN-context.md files for compact durable handoffs.' > /path/to/project/.ai-dev-loop/context/README.md
+printf '%s\n' 'Create NNNN-decision.md files only for durable decisions.' > /path/to/project/.ai-dev-loop/decisions/README.md
+cp SKILL.md /path/to/project/.ai-dev-loop/SKILL.md
+cp REFERENCE.md /path/to/project/.ai-dev-loop/REFERENCE.md
+cat > /path/to/project/.ai-dev-loop/status.md <<'EOF'
+# AI Development Loop Status
+
+## Current Branch
+
+Template only. Replace with the project branch before starting the first R review.
+
+## Current Focus
+
+Template only. Replace this file with project-specific status before starting the first R review.
+
+## Latest R Review
+
+None.
+
+## Latest K Response
+
+None.
+
+## Latest Context Note
+
+None.
+
+## Decisions
+
+None.
+
+## Approval State
+
+- Spec/Plan Status: Not started
+- Implementation Status: Not applicable
+- Overall Status: Blocked
+
+## Completed Items
+
+None.
+
+## Next Expected Role Action
+
+R bootstrap review.
+
+## Next Item
+
+Run the first R review against the available specs, plans, roadmap, tickets, or design notes. If none exist, record the missing requirements as the safe stopping point.
+
+## Blockers
+
+Template only. No project-specific requirements have been loaded yet.
+EOF
+```
+
+Then update `.ai-dev-loop/status.md` for the project and start the first R review.
+
+Before distributing a modified package, run:
+
+```bash
+python3 scripts/validate-ai-dev-loop-package.py
+```
+
+## Quick Start Prompts
+
+### Start a new loop
+
+```text
+Please use .ai-dev-loop/SKILL.md for this repository.
+Act as R first. Audit the current specs, roadmap, and implementation plan.
+Write .ai-dev-loop/reviews/NNNN-r-review.md, update status.md, and commit the coordination records.
+```
+
+### Continue after an R review
+
+```text
+Please use .ai-dev-loop/SKILL.md for this repository.
+Act as K. Read status.md and the latest R review, respond in .ai-dev-loop/responses/NNNN-k-response.md, update specs/code/tests as needed, update status.md, and commit the changes.
+```
+
+### Continue after a K response
+
+```text
+Please use .ai-dev-loop/SKILL.md for this repository.
+Act as R. Read status.md and the latest K response, review the durable evidence and repository changes, write the next review, update status.md, and commit the records.
 ```
 
 ## Understanding the Examples
 
-The included review/response records show how the skill improves itself. This demonstrates:
+The examples demonstrate the workflow rather than a tool-specific transcript.
 
 ### How R Reviews Work
 
-**`0002-r-review.md`** shows R:
-- Reading the skill specification carefully
-- Identifying gaps (missing markdown requirement, stale context risk)
-- Rating severity and type
-- Asking for specific changes
-- Recording findings with references to exact locations
+R should:
 
-### How K Responds
+- read the relevant specs, plans, code, tests, git history, and `.ai-dev-loop/` records,
+- identify gaps, contradictions, risks, missing evidence, and required follow-up,
+- classify findings by severity,
+- distinguish spec approval from implementation approval,
+- write a durable review file,
+- update `status.md`,
+- commit the review and status changes.
 
-**`0002-k-response.md`** shows K:
-- Reading each finding completely
-- Updating the spec to address the issues
-- Recording what was changed and why
-- Validating with manual review
-- Committing changes locally
+### How K Responses Work
 
-### Compact Context
+K should:
 
-**`0002-context.md`** and **`0003-context.md`** show the integrated Context Compressor:
-- Goal and current state
-- Key decisions made
-- Files changed
-- Validation summary
-- Next action
-- Any risks or blockers
+- read R's latest review fully,
+- respond finding-by-finding,
+- update specs before implementation when requirements are unclear,
+- modify the real repository working tree directly,
+- run validation commands where feasible,
+- write a durable response file,
+- update `status.md`,
+- commit the response, specs, code, tests, and status changes.
 
-## Key Concepts Demonstrated
+### Context Notes
 
-### 1. Durable Markdown Records
+`context/` should not be used for every small turn. It should be used when the loop is long, a milestone transitions to another phase, the next agent would otherwise need stale chat context, or the latest status cannot compactly explain the current state.
 
-Everything R and K decide is **recorded in committed markdown**. This creates an audit trail and prevents decisions from disappearing into chat history.
+### Decision Records
 
-### 2. Role Separation
+`decisions/` may stay empty when there are no durable blockers or human/product decisions. Create a decision file when a choice affects architecture, safety, compliance, data loss, user-visible behavior, or when the R/K loop hits a circuit breaker.
 
-Even though this is one AI improving its own skill, **R and K maintain strict separation**:
-- R's findings are in `reviews/`
-- K's responses are in `responses/`
-- Each has its own sections of `status.md`
+## Quality Gates
 
-This keeps the process clear and auditable.
+Before R approval, the records should show:
 
-### 3. Local Git Commits
+- latest R/K files are referenced by `status.md`,
+- all required template sections are present,
+- required findings are resolved or explicitly deferred,
+- spec and implementation status are not conflated,
+- validation commands and results are recorded,
+- known limitations are disclosed,
+- git history contains focused local commits when the environment permits them,
+- the real repository working tree was modified, not a detached artifact copy.
 
-Every meaningful change is committed:
-```
-R: audit specs for role-local markdown
-K: respond to role-local markdown review
-K: update SKILL.md with context compression rules
-R: approve role-local markdown and context compression
-```
+## Approval Semantics
 
-You can see the full history:
-```bash
-git log --oneline -n 10
-```
+Use precise status wording:
 
-### 4. Compressed Communication
-
-The `context/` files show how to keep records brief and focused:
-- State the goal
-- Record decisions
-- List changed files
-- Summarize validation
-- Identify next action
-- Note any risks
-
-This reduces token usage without losing information.
-
-### 5. Escalation When Needed
-
-If R and K disagree or need human guidance, they write a blocker file and stop. They don't keep arguing indefinitely.
-
-## Installing for Claude Code
-
-### Prerequisites
-
-- Claude Code installed
-- Git available in your development environment
-- A project with specifications, implementation plans, or roadmaps
-
-### Installation Steps
-
-1. **Copy the skill file:**
-   ```bash
-   cp SKILL.md ~/.claude/skills/ai-dev-loop-SKILL.md
-   ```
-
-2. **Initialize your project with the skill:**
-   ```bash
-   cd /path/to/your/project
-   claude --skill ai-dev-loop .
-   ```
-
-3. **Provide project context:**
-   - Include your specs, roadmap, or tickets
-   - Point Claude to the relevant files
-   - Optionally copy the example `.ai-dev-loop/` structure
-
-4. **Start the first R review:**
-   ```
-   User: "Please audit our API specification and implementation plan"
-   ```
-
-Claude will:
-- Create R's first review
-- Commit it to git
-- Continue the R/K loop autonomously
-- Create all necessary markdown records
-
-## What to Expect
-
-### First Round (R Review 1)
-R audits your specs and plans, identifies risks, gaps, and assumptions.
-
-### Second Round (K Response 1)
-K addresses R's findings by updating specs, adding clarifications, or preparing implementation.
-
-### Subsequent Rounds
-R re-reviews, K refines, until R approves.
-
-### Then: Implementation
-Once specs are approved, K proceeds with actual code implementation while maintaining the review loop.
-
-## Customization
-
-### Rename the Skill
-If installing with a different name:
-```bash
-cp SKILL.md ~/.claude/skills/my-ai-dev-loop-SKILL.md
+```text
+Approved: no required follow-up remains.
+Approved with notes: no required follow-up remains, but non-blocking observations exist.
+Changes requested: required follow-up exists.
+Blocked: human/product/architecture decision is required.
 ```
 
-### Use a Custom Coordination Directory
-If your project already has an ADR or decision log directory, update `.ai-dev-loop/README.md` to point to it.
+For plan-to-implementation transitions, use the canonical three-line status block:
 
-### Adjust Context Compression
-The skill defaults to compressed markdown. You can request verbose mode, but compressed is recommended for token efficiency.
+```text
+Spec/Plan Status: Approved for implementation
+Implementation Status: Not started
+Overall Status: Pending implementation
+```
 
-### Circuit Breaker Thresholds
-Default is 6 rounds per item before escalating. You can adjust in `SKILL.md` if needed.
+This avoids saying a project is fully approved when only the plan is approved.
+
+## Tool Adapter Notes
+
+### Tools with skill or plugin support
+
+Use the tool's skill, plugin, rules, or custom-instruction mechanism if available, or use the project-local `.ai-dev-loop/SKILL.md` approach.
+
+### CLI coding agents
+
+Keep `SKILL.md` in the repository and instruct the agent to use it as operating instructions. If your setup has repository instruction files, copy or reference this content there.
+
+### Chat-based coding agents
+
+Attach or place `SKILL.md` in the workspace and ask the agent to follow it before editing. Ensure it writes `.ai-dev-loop/` records and commits real repository changes when possible.
+
+### IDE-based agents
+
+Add `SKILL.md` to project rules or pinned workspace context. Require the agent to update `.ai-dev-loop/status.md` and R/K records after each role turn.
+
+### Local LLM coding tools
+
+Use `SKILL.md` as the system prompt or project policy file. The tool only needs file access, command execution, and git access.
 
 ## Troubleshooting
 
-### "Cannot find the skill"
-- Verify the file is in `~/.claude/skills/`
-- Check the filename matches what you're trying to load
-- Restart Claude Code
+### The assistant skips durable records
 
-### "Git not initialized"
-- The skill will create `.git` automatically if it can
-- If git isn't available, the skill will create a blocker
+Tell it: `A role turn is incomplete until the required R/K markdown record and status.md update exist and are committed.`
 
-### "Too many review rounds"
-- Check `.ai-dev-loop/decisions/` for blocker notes
-- Read the last R review and K response
-- Escalate the stuck decision to a human
+### The assistant relies on chat memory
 
-### "Changes not committed"
-- Verify you're on the correct branch: `git branch`
-- Check git status: `git status --short`
-- Review the last few commits: `git log --oneline -n 5`
+Tell it to reconstruct state from git, repository files, `.ai-dev-loop/status.md`, reviews, responses, context notes, and decisions. Important chat facts must be copied to durable markdown before use.
 
-## File Manifest
+### The assistant says approved while requesting fixes
 
-All files needed to run the skill:
+Apply the approval precision rule. Required fixes mean `Changes requested`, not `Approved with notes`.
 
-### Installation
-```
-SKILL.md                 — The skill definition
-README.md                — Coordination guide
-status.md                — Current status
-```
+### `context/` is empty after a long loop
 
-### Examples (for reference)
-```
-reviews/0002-r-review.md         — Example R review
-reviews/0003-r-review.md         — Example R review
+That is technically allowed only when `status.md` and latest records are enough. For long loops, milestone handoffs, or spec-to-implementation transitions, create a compact context file.
 
-responses/0001-k-response.md     — Example K response
-responses/0002-k-response.md     — Example K response
-responses/0003-k-response.md     — Example K response
+### `decisions/` is empty
 
-context/0002-context.md          — Example compact context
-context/0003-context.md          — Example compact context
+That is okay when no blocker, escalation, product decision, architectural decision, or circuit breaker occurred. A README explaining the empty state is helpful but not mandatory.
 
-decisions/                        — (Empty; would contain blockers)
-```
+## Recommended First Command Sequence
 
-### Optional
-```
-ai-dev-loop-complete.tar.gz      — Full compressed archive
-ai-dev-loop-SKILL.md             — Alternate naming for the skill
-INSTALLATION.md                  — Installation guide
-```
+From the repository root:
 
-## Next Steps
-
-1. **Choose your installation method** (skill in `.claude/skills/` or project template)
-2. **Provide your project context** (specs, roadmap, code)
-3. **Start the first R review** (ask Claude to audit your specs)
-4. **Watch the R/K loop** (check `.ai-dev-loop/` for records)
-5. **Let it run autonomously** (R and K handle the review cycle)
-6. **Intervene only when escalated** (circuit breaker or human decision needed)
-
----
-
-**Ready to use?** Start with:
 ```bash
-cp SKILL.md ~/.claude/skills/ai-dev-loop-SKILL.md
+git status --short
+git branch --show-current
+mkdir -p .ai-dev-loop/{reviews,responses,context,decisions}
 ```
 
-Then run:
-```bash
-claude --skill ai-dev-loop /path/to/project
-```
+Then ask your agent to start as R using the quick-start prompt above.
 
-**Questions?** Check the example reviews and responses to understand the process flow.
+## v1.3.1 Patch Notes
 
----
+- Fixed `REFERENCE.md` canonical `Spec/Plan Status` bullet list to remove erroneous `Pending implementation` entry (`SKILL.md` and the validator were already correct; `REFERENCE.md` was inconsistent).
+- Removed embedded pseudo-frontmatter block from `REFERENCE.md` body (cosmetic fix; was confusing to YAML-aware tooling).
+- Added `validate_reference_bullet_status_lists` validator check so future bold-header bullet lists in `REFERENCE.md` are verified against the canonical allowed sets.
+- Tightened version-consistency regex in validator to exclude dependency-pin comparators (`>=`, `<=`, `!=`, `==`, `~=`, `>`, `<`), avoiding false positives on non-version numeric strings.
+- Removed vendor-specific `/home/oai` entry from installer `BROAD_DIRS`; `Path.home()` already covers all user home directories.
 
-**Version**: 1.0  
-**Complete Package** — Includes skill definition, coordination files, example records, and guides  
-**Created**: 2026-06-14
+## v1.3.0 Maintenance Notes
+
+- Keeps the compact `SKILL.md` and optional `REFERENCE.md` structure.
+- Preserves durable R/K separation, evidence-first reviews, status synchronization, git discipline, and degraded-mode honesty.
+- Keeps conservative token-efficiency guidance while compressing `SKILL.md` to fit validation budgets.
+- Keeps provider-neutral byte, line, word, structure, status, template, and packaging checks.
+- Uses the documented clean root zip layout with no wrapper directory.
+- Keeps canonical R/K templates unchanged so existing records remain compatible.
+- Applies audit fixes: status vocabulary clarification, dry-run documentation, quickstart alignment, and `SKILL.md` size headroom.
+
+## Version
+
+**Version**: 1.3.1
+**Last Updated**: 2026-06-14
+
+
+## Commit-hash timing
+
+A role record and `status.md` are often committed together, so `status.md` may not know the hash of the commit that introduces it. Use `pending current commit` inside that commit instead of inventing a hash; a later role may replace it with the actual hash when useful.
+
+## Git Bootstrap Default
+
+Before initializing git, the agent checks `git rev-parse --show-toplevel` to detect an existing repository, worktree, submodule, or parent repository. The skill allows `git init` only when that command fails, the current directory is confirmed as the intended project root, and the directory is not `$HOME`, `/`, `/mnt/data`, or another broad container/workspace parent. The agent must not push, configure remotes, or change external repository settings unless the user explicitly requests it.
+
+If git cannot be initialized or commits cannot be created, the agent records degraded mode in `status.md` and the current R/K record, lists changed paths, and does not proceed with code implementation beyond safe documentation/bootstrap work unless explicitly authorized.
