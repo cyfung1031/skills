@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys
 from datetime import datetime
@@ -139,21 +140,26 @@ def is_broad_path(path: Path) -> bool:
 
 
 def has_project_marker(path: Path) -> bool:
-    return any((path / marker).exists() for marker in PROJECT_MARKERS)
+    # Use os.path.exists via string checking to bypass Path object allocation overhead
+    path_str = str(path)
+    return any(os.path.exists(os.path.join(path_str, marker)) for marker in PROJECT_MARKERS)
 
 
 def has_live_records(target: Path) -> bool:
     """Return True when an existing coordination directory appears to hold project-specific records."""
     if not target.exists():
         return False
-    record_dirs = ['reviews', 'responses', 'context', 'decisions']
+    record_dirs = ('reviews', 'responses', 'context', 'decisions')
+    
+    # Fast short-circuit manual walk using os.walk (significantly faster than rglob)
     for dirname in record_dirs:
-        directory = target / dirname
-        if not directory.exists():
+        dir_path = os.path.join(str(target), dirname)
+        if not os.path.exists(dir_path):
             continue
-        for path in directory.rglob('*'):
-            if path.is_file() and path.name != 'README.md':
-                return True
+        for _root_dir, _, files in os.walk(dir_path):
+            for file in files:
+                if file != 'README.md':
+                    return True
     return False
 
 
@@ -179,6 +185,10 @@ def install_template(package_root: Path, target: Path) -> None:
     File handles may be locked by IDE indexers, background tasks, or operating
     system policy. Convert those local write failures into concise, actionable
     CLI errors instead of exposing a raw traceback.
+
+    This function is safe to call directly: package file existence is checked
+    before creating target directories so a bad package root does not leave a
+    partial installation behind.
     """
     skill = package_root / 'SKILL.md'
     reference = package_root / 'REFERENCE.md'
@@ -189,28 +199,26 @@ def install_template(package_root: Path, target: Path) -> None:
 
     try:
         target.mkdir(parents=True, exist_ok=True)
-        for dirname in ['reviews', 'responses', 'context', 'decisions']:
-            (target / dirname).mkdir(parents=True, exist_ok=True)
+        target_str = str(target)
+        for dirname in ('reviews', 'responses', 'context', 'decisions'):
+            os.makedirs(os.path.join(target_str, dirname), exist_ok=True)
+            
         write_text(target / 'README.md', LOOP_README)
         write_text(target / 'status.md', STATUS_TEMPLATE)
         write_text(target / 'context' / 'README.md', CONTEXT_README)
         write_text(target / 'decisions' / 'README.md', DECISIONS_README)
         shutil.copy2(skill, target / 'SKILL.md')
         shutil.copy2(reference, target / 'REFERENCE.md')
-    except PermissionError:
-        print(
-            f"error: Permission denied writing to '{target}'. Check your directory permissions.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    except PermissionError as exc:
+        raise RuntimeError(
+            f"Permission denied writing to '{target}'. Check your directory permissions."
+        ) from exc
     except OSError as exc:
         detail = exc.strerror or str(exc)
-        print(
-            f"error: Could not write template files to '{target}' ({detail}).\n"
-            "Please ensure no other process or IDE workspace has locked these files.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+        raise RuntimeError(
+            f"Could not write template files to '{target}' ({detail}).\n"
+            "Please ensure no other process or IDE workspace has locked these files."
+        ) from exc
 
 
 def main() -> int:
@@ -257,7 +265,11 @@ def main() -> int:
     if target.exists():
         backup = backup_existing(target_root, target)
         print(f'backed up existing template to: {backup}')
-    install_template(package_root, target)
+    try:
+        install_template(package_root, target)
+    except RuntimeError as exc:
+        print(f'error: {exc}', file=sys.stderr)
+        return 1
     print('installed .ai-dev-loop template')
     print('next: edit .ai-dev-loop/status.md, then start with an R review')
     return 0

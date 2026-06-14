@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import argparse
+from collections import OrderedDict
+import io
+import os
 import re
 import subprocess
 import sys
@@ -10,10 +13,20 @@ import tempfile
 from pathlib import Path
 
 # Compact skill budgets use provider-neutral proxies. They leave roughly 20%
-# maintenance headroom over the v1.4.0 compact skill while still catching bloat.
+# maintenance headroom over the compact skill while still catching bloat.
 MAX_SKILL_BYTES = 21_000
 MAX_SKILL_LINES = 290
 MAX_SKILL_WORDS = 2_700
+MAX_TEXT_FILE_BYTES = 2_000_000
+# Keep import-time validator use fast without letting long-lived processes grow
+# memory unboundedly. The defaults cover the package's normal repeated-read
+# pattern with headroom while limiting retained text to a small, predictable
+# amount. Tests may monkeypatch these constants.
+MAX_TEXT_CACHE_ENTRIES = 256
+MAX_TEXT_CACHE_BYTES = 32_000_000
+TextCacheKey = tuple[str, int, int, int]
+_TEXT_CACHE: OrderedDict[TextCacheKey, tuple[str, int]] = OrderedDict()
+_TEXT_CACHE_BYTES = 0
 
 ALLOWED_OVERALL = {
     "Blocked",
@@ -168,21 +181,120 @@ def rel(path: Path, root: Path) -> str:
         return str(path)
 
 
+def markdown_headings(text: str) -> set[str]:
+    """Return normalized Markdown headings in one linear scan."""
+    return {
+        match.group(1).strip()
+        for match in re.finditer(r"^##+\s+(.+?)\s*$", text, re.MULTILINE)
+    }
+
+
 def has_heading(text: str, heading: str) -> bool:
-    return re.search(rf"^##+\s+{re.escape(heading)}\s*$", text, re.MULTILINE) is not None
+    return heading in markdown_headings(text)
 
 
-def read_text(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+class TextReadError(ValueError):
+    """Raised when a text file cannot be read within validator limits."""
 
 
-def validate_headings(path: Path, headings: list[str], label: str, root: Path, errors: list[str]) -> None:
+def clear_text_cache() -> None:
+    """Release all cached file text retained by imported validator use."""
+    global _TEXT_CACHE_BYTES
+    _TEXT_CACHE.clear()
+    _TEXT_CACHE_BYTES = 0
+
+
+def _evict_text_cache_if_needed() -> None:
+    """Evict least-recently-used entries until cache bounds are satisfied."""
+    global _TEXT_CACHE_BYTES
+    max_entries = max(0, MAX_TEXT_CACHE_ENTRIES)
+    max_cache_bytes = max(0, MAX_TEXT_CACHE_BYTES)
+    while _TEXT_CACHE and (len(_TEXT_CACHE) > max_entries or _TEXT_CACHE_BYTES > max_cache_bytes):
+        _, (_, byte_count) = _TEXT_CACHE.popitem(last=False)
+        _TEXT_CACHE_BYTES -= byte_count
+
+
+def _cache_text(key: TextCacheKey, text: str, byte_count: int) -> None:
+    """Store text in the bounded LRU cache when it fits the configured budget."""
+    global _TEXT_CACHE_BYTES
+    max_entries = max(0, MAX_TEXT_CACHE_ENTRIES)
+    max_cache_bytes = max(0, MAX_TEXT_CACHE_BYTES)
+    if max_entries == 0 or max_cache_bytes == 0 or byte_count > max_cache_bytes:
+        return
+
+    previous = _TEXT_CACHE.pop(key, None)
+    if previous is not None:
+        _TEXT_CACHE_BYTES -= previous[1]
+    _TEXT_CACHE[key] = (text, byte_count)
+    _TEXT_CACHE_BYTES += byte_count
+    _evict_text_cache_if_needed()
+
+
+def read_text(path: Path, max_bytes: int | None = None) -> str:
+    """Read UTF-8 text with a hard size cap and a bounded stat-keyed LRU cache.
+
+    The cache preserves repeated-read speedup for validator phases while
+    keeping long-lived imported use memory-bounded by entry count and retained
+    bytes. The stat tuple prevents stale reads when files change during tests.
+    """
+    if max_bytes is None:
+        max_bytes = MAX_TEXT_FILE_BYTES
+
+    try:
+        stat = path.stat()
+    except OSError as exc:
+        raise TextReadError(f"{path} cannot be stat'ed: {exc}") from exc
+
+    size = stat.st_size
+    if size > max_bytes:
+        raise TextReadError(f"{path} exceeds max readable size: {size} bytes > {max_bytes}")
+
+    key = (os.fspath(path), size, stat.st_mtime_ns, max_bytes)
+    cached = _TEXT_CACHE.get(key)
+    if cached is not None:
+        _TEXT_CACHE.move_to_end(key)
+        return cached[0]
+
+    try:
+        text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise TextReadError(f"{path} is not valid UTF-8 text: {exc}") from exc
+    except OSError as exc:
+        raise TextReadError(f"{path} cannot be read: {exc}") from exc
+
+    _cache_text(key, text, size)
+    return text
+
+
+def read_text_or_report(path: Path, root: Path, errors: list[str]) -> str | None:
+    """Read text for validator phases that should continue after local IO errors."""
+    try:
+        return read_text(path)
+    except TextReadError as exc:
+        fail(str(exc), errors)
+        return None
+
+
+def validate_headings(
+    path: Path,
+    headings: list[str],
+    label: str,
+    root: Path,
+    errors: list[str],
+    text: str | None = None,
+) -> None:
+    """Validate required headings, optionally reusing pre-loaded text to avoid a second disk read."""
     if not path.exists():
         fail(f"missing {rel(path, root)}", errors)
         return
-    text = read_text(path)
+    if text is None:
+        text = read_text_or_report(path, root, errors)
+        if text is None:
+            return
+
+    found_headings = markdown_headings(text)
     for heading in headings:
-        if not has_heading(text, heading):
+        if heading not in found_headings:
             fail(f"{rel(path, root)} missing {label} heading: {heading}", errors)
     validate_statuses(path, text, root, errors)
     validate_status_option_lists(path, text, root, errors)
@@ -221,36 +333,35 @@ def normalize_options(raw_line: str) -> set[str]:
     return {item.strip() for item in clean_line.split("|") if item.strip()}
 
 
-def validate_status_option_lists(path: Path, text: str, root: Path, errors: list[str]) -> None:
-    status_specs = {
-        "Spec/Plan Status": list(ALLOWED_SPEC_PLAN),
-        "Implementation Status": list(ALLOWED_IMPLEMENTATION),
-        "Overall Status": list(ALLOWED_OVERALL),
-    }
-    # Preserve canonical order as documented in SKILL.md.
-    status_specs["Spec/Plan Status"] = [
+CANONICAL_STATUS_OPTIONS = {
+    "Spec/Plan Status": [
         "Not started",
         "Changes requested",
         "Approved for implementation",
         "Approved with notes",
         "Approved",
         "Not applicable",
-    ]
-    status_specs["Implementation Status"] = [
+    ],
+    "Implementation Status": [
         "Not started",
         "Changes requested",
         "Pending implementation",
         "Approved with notes",
         "Approved",
         "Not applicable",
-    ]
-    status_specs["Overall Status"] = [
+    ],
+    "Overall Status": [
         "Blocked",
         "Changes requested",
         "Pending implementation",
         "Approved with notes",
         "Approved",
-    ]
+    ],
+}
+
+
+def validate_status_option_lists(path: Path, text: str, root: Path, errors: list[str]) -> None:
+    status_specs = CANONICAL_STATUS_OPTIONS
 
     for match in re.finditer(r"^-\s*(Spec/Plan Status|Implementation Status|Overall Status):\s*([^\n]+)$", text, re.MULTILINE):
         label, value = match.groups()
@@ -268,10 +379,12 @@ def validate_status_option_lists(path: Path, text: str, root: Path, errors: list
 
 
 def validate_k_response_status_templates(root: Path, errors: list[str]) -> None:
-    for rel_path in ["SKILL.md", "REFERENCE.md"]:
+    for rel_path in ("SKILL.md", "REFERENCE.md"):
         path = root / rel_path
         if path.exists():
-            text = read_text(path)
+            text = read_text_or_report(path, root, errors)
+            if text is None:
+                continue
             if EXPECTED_K_RESPONSE_STATUS_LINE not in text:
                 fail(f"{rel_path} missing canonical K response status template", errors)
 
@@ -288,13 +401,15 @@ def iter_blocks(text: str, heading_pattern: str):
 
     This avoids unanchored full-document Markdown section regexes and guarantees
     linear O(N) behavior even with malformed or heavily nested headings.
+    StringIO avoids splitlines() list materialization while remaining fast on
+    CPython for this validator-sized text workload.
     """
-    lines = text.splitlines()
     current_heading: str | None = None
     current_block: list[str] = []
     compiled_pattern = re.compile(rf"^{heading_pattern}")
 
-    for line in lines:
+    for raw_line in io.StringIO(text):
+        line = raw_line.rstrip("\n")
         if compiled_pattern.match(line):
             if current_heading is not None:
                 yield current_heading, "\n".join(current_block) + "\n"
@@ -308,11 +423,9 @@ def iter_blocks(text: str, heading_pattern: str):
 
 
 def validate_r_finding_templates(path: Path, text: str, root: Path, errors: list[str]) -> None:
-    blocks = list(iter_blocks(text, r"### Finding R-\d{4}-\d{2}: .+"))
-    if not blocks:
-        fail(f"{rel(path, root)} has no R finding blocks", errors)
-        return
-    for title, block in blocks:
+    found = False
+    for title, block in iter_blocks(text, r"### Finding R-\d{4}-\d{2}: .+"):
+        found = True
         title = title.strip()
         severity = re.search(r"^-\s*Severity:\s*([^\n]+)$", block, re.MULTILINE)
         status = re.search(r"^-\s*Status:\s*([^\n]+)$", block, re.MULTILINE)
@@ -330,14 +443,14 @@ def validate_r_finding_templates(path: Path, text: str, root: Path, errors: list
             fail(f"{rel(path, root)} {title} missing Details", errors)
         if not action:
             fail(f"{rel(path, root)} {title} missing Required action", errors)
+    if not found:
+        fail(f"{rel(path, root)} has no R finding blocks", errors)
 
 
 def validate_k_response_templates(path: Path, text: str, root: Path, errors: list[str]) -> None:
-    blocks = list(iter_blocks(text, r"### Response to R-\d{4}-\d{2}"))
-    if not blocks:
-        fail(f"{rel(path, root)} has no K response blocks", errors)
-        return
-    for title, block in blocks:
+    found = False
+    for title, block in iter_blocks(text, r"### Response to R-\d{4}-\d{2}"):
+        found = True
         title = title.strip()
         status = re.search(r"^-\s*Status:\s*([^\n]+)$", block, re.MULTILINE)
         changes = re.search(r"^-\s*Changes made:\s*(.+)$", block, re.MULTILINE)
@@ -350,23 +463,39 @@ def validate_k_response_templates(path: Path, text: str, root: Path, errors: lis
             fail(f"{rel(path, root)} {title} missing Changes made", errors)
         if not evidence:
             fail(f"{rel(path, root)} {title} missing Evidence", errors)
+    if not found:
+        fail(f"{rel(path, root)} has no K response blocks", errors)
 
 
 def section_body(text: str, heading: str) -> str:
-    """Return a level-2 section body using a linear line parser."""
+    """Return an exact level-2 section body without matching heading prefixes.
+
+    The search is anchored to Markdown heading lines so headings such as
+    ``## Name Extra`` do not satisfy ``## Name``. It uses ``str.find`` plus
+    boundary checks for speed while preserving exact-heading semantics.
+    """
     target = f"## {heading}"
-    collecting = False
-    body: list[str] = []
-    for line in text.splitlines():
-        if line.strip() == target:
-            collecting = True
-            body = []
-            continue
-        if collecting and line.startswith("## "):
-            break
-        if collecting:
-            body.append(line)
-    return "\n".join(body) + ("\n" if body else "")
+    search_from = 0
+    while True:
+        idx = text.find(target, search_from)
+        if idx == -1:
+            return ""
+
+        at_line_start = idx == 0 or text[idx - 1] == "\n"
+        line_end = text.find("\n", idx)
+        if line_end == -1:
+            line_end = len(text)
+        line = text[idx:line_end].strip()
+        if at_line_start and line == target:
+            body_start = line_end + (1 if line_end < len(text) else 0)
+            if text.startswith("## ", body_start):
+                return ""
+            next_heading = text.find("\n## ", body_start)
+            if next_heading == -1:
+                return text[body_start:]
+            return text[body_start:next_heading]
+
+        search_from = idx + len(target)
 
 
 def validate_r_clarification_response_section(path: Path, text: str, root: Path, errors: list[str]) -> None:
@@ -380,9 +509,11 @@ def validate_k_clarification_objection_section(path: Path, text: str, root: Path
     if not body.strip():
         fail(f"{rel(path, root)} has empty Clarifications or Objections section", errors)
         return
-    for phrase in ["Questions for R:", "Objections:"]:
-        if phrase not in body:
-            fail(f"{rel(path, root)} Clarifications or Objections missing canonical field: {phrase}", errors)
+    if "Questions for R:" not in body or "Objections:" not in body:
+        if "Questions for R:" not in body:
+            fail(f"{rel(path, root)} Clarifications or Objections missing canonical field: Questions for R:", errors)
+        if "Objections:" not in body:
+            fail(f"{rel(path, root)} Clarifications or Objections missing canonical field: Objections:", errors)
     if re.search(r"^None\.?\s*$", body.strip(), re.IGNORECASE):
         fail(f"{rel(path, root)} uses bare None in Clarifications or Objections instead of canonical fields", errors)
 
@@ -395,10 +526,12 @@ def validate_whole_change_evidence_label(path: Path, text: str, root: Path, erro
 
 
 def validate_reference_status_vocabulary(root: Path, errors: list[str]) -> None:
-    for rel_path in ["SKILL.md", "REFERENCE.md"]:
+    for rel_path in ("SKILL.md", "REFERENCE.md"):
         path = root / rel_path
         if path.exists():
-            validate_status_option_lists(path, read_text(path), root, errors)
+            text = read_text_or_report(path, root, errors)
+            if text is not None:
+                validate_status_option_lists(path, text, root, errors)
 
 
 def validate_reference_bullet_status_lists(root: Path, errors: list[str]) -> None:
@@ -406,8 +539,10 @@ def validate_reference_bullet_status_lists(root: Path, errors: list[str]) -> Non
     ref = root / "REFERENCE.md"
     if not ref.exists():
         return
-    text = read_text(ref)
-    sections: dict[str, set[str]] = {
+    text = read_text_or_report(ref, root, errors)
+    if text is None:
+        return
+    sections = {
         "Spec/Plan Status": ALLOWED_SPEC_PLAN,
         "Implementation Status": ALLOWED_IMPLEMENTATION,
         "Overall Status": ALLOWED_OVERALL,
@@ -428,54 +563,83 @@ def validate_reference_bullet_status_lists(root: Path, errors: list[str]) -> Non
                     )
 
 
-
-
 def is_forbidden_artifact_path(path: Path, root: Path) -> bool:
-    parts = set(path.relative_to(root).parts)
-    return bool(parts & FORBIDDEN_PACKAGE_ARTIFACTS) or path.suffix in FORBIDDEN_PACKAGE_SUFFIXES
+    if path.suffix in FORBIDDEN_PACKAGE_SUFFIXES:
+        return True
+    parts = path.relative_to(root).parts
+    # Fast evaluation avoids set intersections inside inner loops
+    for forbidden in FORBIDDEN_PACKAGE_ARTIFACTS:
+        if forbidden in parts:
+            return True
+    return False
+
 
 def validate_required_paths(root: Path, errors: list[str]) -> None:
     for rel_path in REQUIRED_FILES:
-        path = root / rel_path
-        if not path.is_file():
+        if not (root / rel_path).is_file():
             fail(f"missing required file: {rel_path}", errors)
     for rel_path in REQUIRED_DIRS:
-        path = root / rel_path
-        if not path.is_dir():
+        if not (root / rel_path).is_dir():
             fail(f"missing required directory: {rel_path}", errors)
 
 
+def scan_package_tree(root: Path, errors: list[str]) -> dict[str, str]:
+    """Single tree scan for packaging artifacts and Markdown text checks.
+
+    Returns successfully read Markdown files keyed by package-relative path.
+    This keeps package-wide checks O(one filesystem walk) and bounds per-file
+    memory with read_text().
+    """
+    markdown_text: dict[str, str] = {}
+    if (root / ".ai-dev-loop").exists():
+        fail("forbidden duplicate root .ai-dev-loop template found", errors)
+    for dirpath, dirnames, filenames in os.walk(root):
+        base = Path(dirpath)
+
+        kept_dirnames: list[str] = []
+        for dirname in dirnames:
+            if dirname in FORBIDDEN_PACKAGE_ARTIFACTS:
+                fail(f"forbidden packaging artifact found: {rel(base / dirname, root)}", errors)
+            else:
+                kept_dirnames.append(dirname)
+        dirnames[:] = kept_dirnames
+
+        for filename in filenames:
+            path = base / filename
+            if filename in FORBIDDEN_PACKAGE_ARTIFACTS:
+                fail(f"forbidden packaging artifact found: {rel(path, root)}", errors)
+                continue
+            if path.suffix in FORBIDDEN_PACKAGE_SUFFIXES:
+                fail(f"forbidden generated file found: {rel(path, root)}", errors)
+                continue
+            if path.suffix != ".md":
+                continue
+            text = read_text_or_report(path, root, errors)
+            if text is None:
+                continue
+            rel_path = rel(path, root)
+            markdown_text[rel_path] = text
+            for pattern in STALE_PATTERNS:
+                if pattern.search(text):
+                    fail(f"{rel_path} contains stale git-bootstrap language: {pattern.pattern}", errors)
+    return markdown_text
+
+
 def validate_stale_language(root: Path, errors: list[str]) -> None:
-    for path in root.rglob("*.md"):
-        if is_forbidden_artifact_path(path, root):
-            continue
-        try:
-            text = read_text(path)
-        except UnicodeDecodeError as exc:
-            fail(f"{rel(path, root)} is not valid UTF-8 Markdown: {exc}", errors)
-            continue
-        for pattern in STALE_PATTERNS:
-            if pattern.search(text):
-                fail(f"{rel(path, root)} contains stale git-bootstrap language: {pattern.pattern}", errors)
+    scan_package_tree(root, errors)
 
 
 def validate_clean_package(root: Path, errors: list[str]) -> None:
-    root_template = root / ".ai-dev-loop"
-    if root_template.exists():
-        fail("forbidden duplicate root .ai-dev-loop template found", errors)
-    for path in root.rglob("*"):
-        if is_forbidden_artifact_path(path, root):
-            if path.suffix in FORBIDDEN_PACKAGE_SUFFIXES:
-                fail(f"forbidden generated file found: {rel(path, root)}", errors)
-            else:
-                fail(f"forbidden packaging artifact found: {rel(path, root)}", errors)
+    scan_package_tree(root, errors)
 
 
 def get_skill_version(root: Path, errors: list[str]) -> str | None:
     skill = root / "SKILL.md"
     if not skill.exists():
         return None
-    text = read_text(skill)
+    text = read_text_or_report(skill, root, errors)
+    if text is None:
+        return None
     match = re.search(r"^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$", text, re.MULTILINE)
     if not match:
         fail("SKILL.md missing semantic version in front matter", errors)
@@ -488,25 +652,30 @@ def validate_version_consistency(root: Path, errors: list[str]) -> None:
     if not expected:
         return
     md_files = [path for path in root.glob("*.md") if path.name != "SKILL.md"]
-    # Negative lookbehind excludes dependency-pin comparators (>=, <=, !=, ==, ~=, >, <).
     version_re = re.compile(r"(?<![>=<!~])(?:^|\b)(?:v)?([0-9]+\.[0-9]+\.[0-9]+)\b", re.MULTILINE)
     for path in [root / "SKILL.md", *md_files]:
         if not path.exists():
             continue
-        text = read_text(path)
+        text = read_text_or_report(path, root, errors)
+        if text is None:
+            continue
         for match in version_re.finditer(text):
             found = match.group(1)
             if found != expected:
                 fail(f"{rel(path, root)} has version {found}; expected {expected}", errors)
     readme = root / "README.md"
-    if readme.exists() and f"**Version**: {expected}" not in read_text(readme):
-        fail(f"README.md missing documented version {expected}", errors)
+    if readme.exists():
+        readme_text = read_text_or_report(readme, root, errors)
+        if readme_text is not None and f"**Version**: {expected}" not in readme_text:
+            fail(f"README.md missing documented version {expected}", errors)
 
 
 def validate_compact_skill(root_skill: Path, root: Path, errors: list[str]) -> None:
     if not root_skill.exists():
         return
-    text = read_text(root_skill)
+    text = read_text_or_report(root_skill, root, errors)
+    if text is None:
+        return
     byte_count = len(text.encode("utf-8"))
     line_count = text.count("\n") + 1
     word_count = len(re.findall(r"\S+", text))
@@ -551,22 +720,23 @@ def validate_compact_skill(root_skill: Path, root: Path, errors: list[str]) -> N
             fail(f"SKILL.md missing compact-skill safeguard phrase: {phrase}", errors)
 
 
-
 def validate_embedded_record_templates(root: Path, errors: list[str]) -> None:
     """Ensure documented R/K templates keep the canonical section structure."""
-    template_files = ["SKILL.md", "REFERENCE.md"]
-    for rel_path in template_files:
+    for rel_path in ("SKILL.md", "REFERENCE.md"):
         path = root / rel_path
         if not path.exists():
             continue
-        text = read_text(path)
+        text = read_text_or_report(path, root, errors)
+        if text is None:
+            continue
+        found_headings = markdown_headings(text)
         for heading in REQUIRED_R_HEADINGS:
-            if not has_heading(text, heading):
+            if heading not in found_headings:
                 fail(f"{rel_path} missing embedded R template heading: {heading}", errors)
         for heading in REQUIRED_K_HEADINGS:
-            if not has_heading(text, heading):
+            if heading not in found_headings:
                 fail(f"{rel_path} missing embedded K template heading: {heading}", errors)
-        for expected_line in [EXPECTED_R_SEVERITY_LINE, EXPECTED_R_FINDING_STATUS_LINE]:
+        for expected_line in (EXPECTED_R_SEVERITY_LINE, EXPECTED_R_FINDING_STATUS_LINE):
             if expected_line not in text:
                 fail(f"{rel_path} missing canonical R finding template line: {expected_line}", errors)
 
@@ -594,12 +764,14 @@ def extract_manual_status_blocks(text: str) -> list[str]:
 
 def validate_manual_status_templates(root: Path, errors: list[str]) -> None:
     """Ensure manual-install docs keep the same required status ledger as the installer."""
-    doc_paths = ["QUICKSTART.md", "INSTALLATION.md", "COMPLETE-PACKAGE-GUIDE.md"]
+    doc_paths = ("QUICKSTART.md", "INSTALLATION.md", "COMPLETE-PACKAGE-GUIDE.md")
     for rel_path in doc_paths:
         path = root / rel_path
         if not path.exists():
             continue
-        text = read_text(path)
+        text = read_text_or_report(path, root, errors)
+        if text is None:
+            continue
         if "## Open Required Findings" not in text:
             fail(f"{rel_path} manual status template missing: ## Open Required Findings", errors)
         blocks = extract_manual_status_blocks(text)
@@ -620,8 +792,10 @@ def validate_installer_status_template(root: Path, errors: list[str]) -> None:
     installer = root / "scripts" / "install-ai-dev-loop-template.py"
     if not installer.exists():
         return
-    text = read_text(installer)
-    for phrase in ["## Open Required Findings", "first R review must populate", "unresolved K questions/objections"]:
+    text = read_text_or_report(installer, root, errors)
+    if text is None:
+        return
+    for phrase in ("## Open Required Findings", "first R review must populate", "unresolved K questions/objections"):
         if phrase not in text:
             fail(f"installer status template missing: {phrase}", errors)
 
@@ -648,7 +822,7 @@ def validate_installer_smoke_test(root: Path, errors: list[str]) -> None:
             fail(f"installer smoke test failed for marked project: {result.stderr.strip() or result.stdout.strip()}", errors)
             return
 
-        expected_paths = [
+        expected_paths = (
             ".ai-dev-loop/SKILL.md",
             ".ai-dev-loop/REFERENCE.md",
             ".ai-dev-loop/status.md",
@@ -659,7 +833,7 @@ def validate_installer_smoke_test(root: Path, errors: list[str]) -> None:
             ".ai-dev-loop/context/README.md",
             ".ai-dev-loop/decisions",
             ".ai-dev-loop/decisions/README.md",
-        ]
+        )
         for rel_path in expected_paths:
             if not (marked_project / rel_path).exists():
                 fail(f"installer smoke test missing output path: {rel_path}", errors)
@@ -689,22 +863,11 @@ def validate_installer_smoke_test(root: Path, errors: list[str]) -> None:
             fail("installer smoke test expected --force without --force-live-records to reject live records", errors)
 
 
-
-
 def validate_agent_readability_guidance(root: Path, errors: list[str]) -> None:
     """Ensure package docs keep agent-readable instruction semantics."""
     checks = {
-        "SKILL.md": [
-            "K can ask R for clarification or object",
-            "K records evidence, risk, proposed safe path",
-            "Command order:",
-        ],
-        "REFERENCE.md": [
-            "## Agent-Readable Instruction Style",
-            "imperative verbs",
-            "Avoid soft guidance for required behavior",
-            "Use agent-readable control flow",
-        ],
+        "SKILL.md": ["K can ask R for clarification or object", "K records evidence, risk, proposed safe path", "Command order:"],
+        "REFERENCE.md": ["## Agent-Readable Instruction Style", "imperative verbs", "Avoid soft guidance for required behavior", "Use agent-readable control flow"],
         "README.md": ["explicit R/K clarification and objection gates"],
         "QUICKSTART.md": ["K must not blindly implement", "R is not a complete task-list generator"],
         "INSTALLATION.md": ["explicit clarification/objection gates"],
@@ -714,36 +877,42 @@ def validate_agent_readability_guidance(root: Path, errors: list[str]) -> None:
         path = root / rel_path
         if not path.exists():
             continue
-        text = read_text(path)
+        text = read_text_or_report(path, root, errors)
+        if text is None:
+            continue
         for phrase in phrases:
             if phrase not in text:
                 fail(f"{rel_path} missing agent-readable instruction phrase: {phrase}", errors)
 
 
-
-
 def validate_security_hardening(root: Path, errors: list[str]) -> None:
-    """Ensure validator and installer keep the v1.4.0 hardening fixes."""
+    """Ensure validator and installer keep the hardening fixes."""
     validator = root / "scripts" / "validate-ai-dev-loop-package.py"
     installer = root / "scripts" / "install-ai-dev-loop-template.py"
     if validator.exists():
-        text = read_text(validator)
+        text = read_text_or_report(validator, root, errors)
+        if text is None:
+            return
         required = [
             "def iter_blocks(text: str, heading_pattern: str):",
             "linear O(N) behavior",
             "compiled_pattern.match(line)",
             "def normalize_options(raw_line: str) -> set[str]:",
             "Mismatched vocabulary format",
+            "MAX_TEXT_FILE_BYTES",
+            "def scan_package_tree(root: Path, errors: list[str]) -> dict[str, str]:",
         ]
         for phrase in required:
             if phrase not in text:
-                fail(f"validator missing v1.4.0 hardening phrase: {phrase}", errors)
+                fail(f"validator missing hardening phrase: {phrase}", errors)
         old_iter_body = "heading_pattern}" + "[" + r"\s\S" + "]*?"
         if old_iter_body in text:
             fail("validator still contains backtracking-prone global iter_blocks regex", errors)
     if installer.exists():
-        text = read_text(installer)
-        for phrase in ["Permission denied writing", "Could not write template files", "locked these files"]:
+        text = read_text_or_report(installer, root, errors)
+        if text is None:
+            return
+        for phrase in ("Permission denied writing", "Could not write template files", "locked these files"):
             if phrase not in text:
                 fail(f"installer missing local write-error diagnostic phrase: {phrase}", errors)
 
@@ -762,7 +931,9 @@ def validate_pending_current_commit_semantics(root: Path, errors: list[str]) -> 
         path = root / rel_path
         if not path.exists():
             continue
-        text = read_text(path)
+        text = read_text_or_report(path, root, errors)
+        if text is None:
+            continue
         for phrase in phrases:
             if phrase not in text:
                 fail(f"{rel_path} missing pending-current-commit semantic phrase: {phrase}", errors)
@@ -781,13 +952,18 @@ def validate_whole_change_guidance(root: Path, errors: list[str]) -> None:
         path = root / rel_path
         if not path.exists():
             continue
-        text = read_text(path)
+        text = read_text_or_report(path, root, errors)
+        if text is None:
+            continue
         for phrase in phrases:
             if phrase not in text:
                 fail(f"{rel_path} missing whole-change guidance phrase: {phrase}", errors)
 
 
 def main() -> int:
+    # Avoid retaining text between CLI runs when this module is invoked from a
+    # long-lived Python process, while preserving cache benefits within the run.
+    clear_text_cache()
     args = parse_args()
     root = args.root.resolve()
     errors: list[str] = []
@@ -797,7 +973,7 @@ def main() -> int:
         return 1
 
     validate_required_paths(root, errors)
-    validate_clean_package(root, errors)
+    markdown_text = scan_package_tree(root, errors)
     validate_version_consistency(root, errors)
 
     root_skill = root / "SKILL.md"
@@ -817,35 +993,46 @@ def main() -> int:
     validate_installer_smoke_test(root, errors)
 
     for status_path in [root / "examples" / ".ai-dev-loop" / "status.md"]:
-        validate_headings(status_path, REQUIRED_STATUS_HEADINGS, "status", root, errors)
+        if status_path.exists():
+            validate_headings(status_path, REQUIRED_STATUS_HEADINGS, "status", root, errors)
 
     reviews_dir = root / "examples" / ".ai-dev-loop" / "reviews"
     responses_dir = root / "examples" / ".ai-dev-loop" / "responses"
+    
     if reviews_dir.exists():
         for path in sorted(reviews_dir.glob("*.md")):
-            text = read_text(path)
-            validate_headings(path, REQUIRED_R_HEADINGS, "R", root, errors)
+            text = read_text_or_report(path, root, errors)
+            if text is None:
+                continue
+            # Performance optimization: pass pre-loaded text directly to bypass secondary disk read
+            validate_headings(path, REQUIRED_R_HEADINGS, "R", root, errors, text=text)
             validate_r_finding_templates(path, text, root, errors)
             validate_r_clarification_response_section(path, text, root, errors)
+            
     if responses_dir.exists():
         for path in sorted(responses_dir.glob("*.md")):
-            text = read_text(path)
-            validate_headings(path, REQUIRED_K_HEADINGS, "K", root, errors)
+            text = read_text_or_report(path, root, errors)
+            if text is None:
+                continue
+            # Performance optimization: pass pre-loaded text directly to bypass secondary disk read
+            validate_headings(path, REQUIRED_K_HEADINGS, "K", root, errors, text=text)
             validate_k_response_status_values(path, text, root, errors)
             validate_k_response_templates(path, text, root, errors)
             validate_k_clarification_objection_section(path, text, root, errors)
             validate_whole_change_evidence_label(path, text, root, errors)
 
-    validate_stale_language(root, errors)
 
-    if errors:
-        print("AI Development Loop package validation failed:")
-        for err in errors:
-            print(f"- {err}")
-        return 1
+    try:
+        if errors:
+            print("AI Development Loop package validation failed:")
+            for err in errors:
+                print(f"- {err}")
+            return 1
 
-    print("AI Development Loop package validation passed.")
-    return 0
+        print("AI Development Loop package validation passed.")
+        return 0
+    finally:
+        clear_text_cache()
 
 
 if __name__ == "__main__":
