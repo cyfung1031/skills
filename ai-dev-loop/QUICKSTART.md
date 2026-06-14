@@ -59,6 +59,10 @@ None.
 - Implementation Status: Not applicable
 - Overall Status: Blocked
 
+## Open Required Findings
+
+None yet; first R review must populate any blockers or required findings.
+
 ## Completed Items
 
 None.
@@ -95,5 +99,5 @@ python3 scripts/validate-ai-dev-loop-package.py
 
 ## Version
 
-**Version**: 1.3.1
+**Version**: 1.3.3
 **Last Updated**: 2026-06-14

@@ -35,6 +35,10 @@ None. No durable product, architecture, risk, dependency, migration, or cost dec
 - Implementation Status: Approved with notes
 - Overall Status: Approved with notes
 
+## Open Required Findings
+
+None. R-0003-01 is an accepted-risk note with no required K action.
+
 ## Completed Items
 
 - Created the `.ai-dev-loop/` coordination structure.

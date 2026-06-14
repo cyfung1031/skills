@@ -7,7 +7,7 @@ Use the loop when a repository benefits from a durable reviewer/implementer spli
 1. R reviews specs, plans, code, tests, and prior K responses.
 2. K responds to every finding, updates specs/code/tests, validates, and records evidence.
 3. Both roles update `.ai-dev-loop/status.md` after their turns.
-4. Git commits provide the audit trail when available.
+4. Git commits are required audit trail entries when git is available.
 
 Keep role records compact. Preserve evidence, changed paths, commands, validation results, open findings, blockers, and approval state. Compress repeated rationale and stale background.
 
@@ -72,7 +72,7 @@ Interpretation rules:
 - `Blocked` means a human decision, external access, missing authority, or unsafe product/security/legal/cost choice prevents safe progress.
 - `Changes requested` means K must update specs, code, tests, documentation, or coordination records before the reviewed artifact can be approved.
 - `Pending implementation` means the spec or plan is approved and K is authorized to implement, but the implementation has not yet been reviewed.
-- `Approved with notes` means K may continue without required corrective action; notes are advisory or future-facing only.
+- `Approved with notes` means K must continue only when R records no required corrective action; notes are advisory or future-facing only.
 - `Approved` means no further follow-up is required for the reviewed scope.
 
 Do not invent additional approval states. When a review covers both planning and implementation, always write all three fields: `Spec/Plan Status`, `Implementation Status`, and `Overall Status`.
@@ -82,14 +82,14 @@ Do not invent additional approval states. When a review covers both planning and
 1. **Single working branch**
    - R and K must work on the same current local branch.
    - Do not switch branches unless the user explicitly requests it.
-   - Every meaningful change by either role must be committed locally when git is available and repository policy allows. If git is temporarily unavailable or repository policy prevents commits, record the limitation and exact uncommitted paths in the role record and status file.
+   - Every meaningful change by either role must be committed locally when git is available. If git is unavailable, git identity is missing, permissions prevent commits, or the repository is in degraded mode, record the limitation and exact uncommitted paths in the role record and status file. Repository policy is not a reason to skip commits unless that policy is explicitly present in durable project instructions or stated by the user.
    - If the repository has an existing commit policy, follow it while preserving durable `.ai-dev-loop/` records and never claiming a commit exists when it does not.
    - Use local commits as the shared history, audit trail, and rollback mechanism.
 
 2. **Markdown-based handoff**
    - R records every review, audit, concern, clarification request, and final approval in markdown.
    - K records every response, decision, spec update, implementation update, and test result in markdown.
-   - **Every role turn must write markdown.** An R turn is complete when the R review and synchronized status update are written and committed when policy allows. A K turn is complete when the K response, any repository changes, and synchronized status update are written and committed when policy allows. A full review-response cycle is complete only when required R and K records both exist, except when R records final approval with no required K follow-up.
+   - **Every role turn must write markdown.** An R turn is complete when the R review and synchronized status update are written and committed when git is available. A K turn is complete when the K response, any repository changes, and synchronized status update are written and committed when git is available. A full review-response cycle is complete only when required R and K records both exist, except when R records final approval with no required K follow-up.
    - Markdown files are the durable conversation between R and K.
 
 3. **Role-local context, not chat-memory context**
@@ -104,7 +104,7 @@ Do not invent additional approval states. When a review covers both planning and
 
 5. **Autonomous loop**
    - R and K continue the review-response loop until R has no further follow-up.
-   - K may then proceed to the next implementation step according to the existing implementation plan, roadmap, or specification priority.
+   - K may then proceed to the next implementation step only after the latest R review has no unresolved required finding or R/human has accepted the risk in writing.
    - Respect the user's current requested scope. Do not proceed to the next roadmap item unless the user asked for autonomous continuation, the project instructions explicitly authorize it, or `status.md` already records that continuation scope.
    - The AI should not ask the human to choose between ordinary engineering options when the workspace gives enough context to make a reasonable decision.
 
@@ -116,7 +116,7 @@ Do not invent additional approval states. When a review covers both planning and
 
 7. **Small, reversible steps**
    - Prefer small commits with focused scope.
-   - Each commit should represent one review note, one response, one spec update, one implementation step, or one test/fix step.
+   - Each commit must stay focused: one review note, one response, one spec update, one implementation step, or one test/fix step unless the repo requires an atomic cross-file change.
    - Avoid large mixed commits that combine unrelated review, spec, and code changes.
 
 8. **Direct repository asset modification after approval**
@@ -265,7 +265,7 @@ git status --short
 git branch --show-current
 ```
 
-Then create the initial coordination files and commit them if git identity and permissions allow. Automatic `git init` is allowed only at a confirmed project root because this skill relies on local commits for auditability and rollback. Do not push or configure remotes unless the user explicitly asks.
+Then create the initial coordination files and commit them when git is available. If git identity or permissions prevent the commit, enter degraded mode and record the limitation. Automatic `git init` is allowed only at a confirmed project root because this skill relies on local commits for auditability and rollback. Do not push or configure remotes unless the user explicitly asks.
 
 ### Non-git fallback and degraded mode
 
@@ -300,12 +300,13 @@ Rules:
 - Do not discard user changes.
 - Do not overwrite uncommitted changes unless they were created by the current role in the current loop and the change is intentionally being amended.
 - If unrelated uncommitted changes exist, work around them when possible and record the constraint.
-- Every R markdown update must be committed locally when git is available and repository policy allows.
-- Every K markdown update must be committed locally when git is available and repository policy allows.
-- Every spec update, implementation change, and test update must be committed locally when git is available and repository policy allows.
-- If commits cannot be created because the environment lacks git identity, permissions, or repository access, the role must record this as a validation limitation and list the exact files that remain uncommitted.
+- Every completed R turn must be committed locally after the R review and synchronized `status.md` update are written.
+- Every completed K turn must be committed locally after the K response, synchronized `status.md`, and any spec/code/test changes are written.
+- Every spec update, implementation change, and test update must be included in a K commit unless it is explicitly part of an R-only documentation review turn.
+- Commit subjects must keep the role-log format: `R: <review action>` for R commits and `K: <implementation or response action>` for K commits. Do not replace these prefixes with generic subjects such as `update files` or `fix issue`.
+- If commits cannot be created because the environment lacks git identity, permissions, or repository access, the role must record `Commit: not committed: <reason>` as a validation limitation and list the exact files that remain uncommitted in the role record and `status.md`.
 
-Suggested commit prefixes:
+Required commit prefixes:
 
 ```text
 R: audit specs for <topic>
@@ -386,7 +387,7 @@ Overall status must be one of:
 - Blocked: human input, external access, or a durable decision is required before safe progress can continue.
 - Changes requested: K must update specs, code, tests, or documentation.
 - Pending implementation: the spec/plan is approved and K is authorized to implement, but no implementation has been reviewed yet.
-- Approved with notes: K may proceed only when notes require no follow-up before continuing.
+- Approved with notes: K must proceed only when notes require no follow-up before continuing.
 - Approved: No further follow-up.
 
 Do not use `Approved with notes` when any Critical, High, or Medium finding has a required K action.
@@ -406,7 +407,7 @@ R should not block on minor style issues unless they affect correctness, maintai
 R may approve when:
 
 - The relevant specification is clear enough.
-- The implementation matches the specification.
+- The implementation matches the specification and documentation.
 - Tests or validation are adequate for the change size and risk.
 - No unresolved blocker, high, or medium findings remain.
 
@@ -415,18 +416,20 @@ R must continue the loop when:
 - Requirements are contradictory.
 - Acceptance criteria are missing for a material behavior.
 - Implementation diverges from the plan.
+- Documentation/specs/examples diverge from implemented behavior or user-visible workflow.
 - Tests do not cover important behavior.
 - Security, data loss, migration, or compatibility risks are unresolved.
 
 ## Role K: Implementer/Keeper
 
-K is responsible for responding to R, updating specs, implementing code, and validating changes.
+K is responsible for responding to R, updating specs and documentation, implementing code, and validating changes.
 
 ### K must do
 
 - Read R's latest markdown review.
 - Address every finding explicitly.
 - Update specifications when the issue is a spec gap.
+- Update documentation, examples, installation notes, quickstart, package guides, or reference docs when behavior, commands, setup, API, config, workflow, validation, packaging, or user-visible semantics change.
 - Update implementation when the issue is a code or behavior gap.
 - Update tests when validation is insufficient.
 - Record responses in markdown.
@@ -471,6 +474,10 @@ Briefly summarize the response.
 
 List specification or plan updates, if any.
 
+## Documentation Updates
+
+List documentation/spec/example/install/quickstart/reference updates, or state `Not needed` with evidence.
+
 ## Implementation Updates
 
 List implementation updates, if any.
@@ -494,7 +501,7 @@ Ask R to review the response, updated specs, implementation, and tests.
 
 ### K decision rules
 
-K should autonomously choose the next action when the existing roadmap, implementation plan, or specifications imply priority.
+K autonomously chooses the next action when the existing roadmap, implementation plan, or specifications imply priority, but unresolved required R findings override roadmap priority and block new implementation. Documentation discrepancy is a required finding when changed behavior and docs/specs/examples diverge.
 
 K may update specifications without human confirmation when:
 
@@ -594,11 +601,11 @@ Proposed | Accepted | Superseded | Blocked
 2. Locate specifications, implementation plans, roadmap files, tickets, or design documents.
 3. R reviews the relevant spec and implementation plan.
 4. R writes a review markdown file.
-5. R updates `status.md` and commits the review and status together when possible.
+5. R updates `status.md` and commits the review and status together with an `R: ...` subject.
 6. K reads R's review.
 7. K updates specs, plans, or clarification notes as needed.
 8. K writes a response markdown file.
-9. K updates `status.md` and commits the response, status, and any spec changes together when possible.
+9. K updates `status.md` and commits the response, status, and any spec changes together with a `K: ...` subject.
 10. Repeat until R records `Approved` or `Approved with notes` with no required follow-up.
 
 ### Phase 2: Implementation
@@ -618,10 +625,10 @@ Proposed | Accepted | Superseded | Blocked
 
 1. R reviews the implementation against the approved specification and plan.
 2. R records findings, clarification needs, or approval in markdown.
-3. R updates `status.md` and commits the review and status together when possible.
+3. R updates `status.md` and commits the review and status together with an `R: ...` subject.
 4. K addresses every finding.
 5. K records responses and validation in markdown.
-6. K updates `status.md` and commits the response, status, and changes together when possible.
+6. K updates `status.md` and commits the response, status, and changes together with a `K: ...` subject.
 7. Repeat until R has no further follow-up.
 
 ### Phase 4: Next Roadmap Item
@@ -812,7 +819,7 @@ Do not claim a command passed unless the exact command and summarized result are
 
 ### Status synchronization gate
 
-After writing any R review or K response, update `.ai-dev-loop/status.md` before the role turn is considered complete. Commit the role record and status update together when possible.
+After writing any R review or K response, update `.ai-dev-loop/status.md` before the role turn is considered complete. Commit the role record and status update together when git is available.
 The status file must reference the latest R review and latest K response that exist at the end of the role turn.
 The role turn is incomplete if `.ai-dev-loop/status.md` is stale.
 
@@ -841,14 +848,25 @@ When a spec or plan is approved but implementation remains to be done, separate 
 
 This avoids confusing authorization to implement with final implementation approval.
 
+## Practical R/K failure prevention
+
+Common production failures and mandatory countermeasures:
+
+- **Lost findings:** keep an Open Required Findings ledger in `status.md`; R carries unresolved findings forward, and K cannot work only from memory or only from the newest paragraph.
+- **Code-only fixes:** every behavior change needs matching docs/specs/examples/tests or a recorded no-doc rationale with evidence.
+- **Rubber-stamp reviews:** R verifies changed paths, diffs, docs/specs/examples/tests, validation output, and status before approval.
+- **Scope creep:** K fixes the active R findings only. New adjacent work is recorded as a future finding, decision, or next item after R approval.
+- **Weak evidence:** each finding response cites changed paths, commands/results, commits, and drift-scan outcome.
+
 ## Quality Gates
 
 Before R approval, ensure:
 
-- Specs and implementation agree.
+- Specs, documentation, examples, and implementation agree.
 - All R findings are addressed or explicitly approved as deferred.
-- Tests are added or updated for changed behavior where practical.
+- Tests are added or updated for changed behavior unless the record gives a concrete reason they are impractical and alternative validation evidence is recorded.
 - Validation commands and results are recorded.
+- K response includes documentation updates or a concrete no-doc-change rationale.
 - Local commits exist for R and K changes.
 - Implementation changes, when present, were applied directly to the repository working tree rather than only to staged artifacts or detached copies.
 - The status file is current.
@@ -936,11 +954,11 @@ Proceed autonomously through review, response, implementation, and follow-up loo
 - A human escalation criterion is met.
 - A technical limitation prevents safe continuation.
 
-Always leave the repository in a traceable state with committed local history for every completed R or K action when repository policy allows; otherwise record the policy limitation and exact uncommitted paths.
+Always leave the repository in a traceable state with committed local history for every completed R or K action, using `R:` and `K:` commit subjects; otherwise record the commit limitation and exact uncommitted paths.
 
-## v1.3.1 Token-Efficiency and Packaging Notes
+## v1.3.3 Token-Efficiency and Packaging Notes
 
-This revision keeps durable R/K separation, evidence-first reviews, synchronized status, git discipline, degraded-mode honesty, and optional reference material. It also fixes the prior validation/package mismatch:
+This revision keeps durable R/K separation, open-finding carry-forward, code-doc-test consistency checks, evidence-first reviews, synchronized status, git discipline, degraded-mode honesty, and optional reference material. It also fixes the prior validation/package mismatch:
 
 - `SKILL.md` remains the compact authoritative policy and now fits the validator budget.
 - `REFERENCE.md` remains optional and skippable for simple turns.
@@ -949,3 +967,6 @@ This revision keeps durable R/K separation, evidence-first reviews, synchronized
 - Resolved `status.md` history may move into context or decision notes.
 - Release zips use the documented clean root layout.
 - Validator size checks remain provider-neutral: bytes, lines, and words, not model-specific tokenizers.
+
+## Production hardening addendum
+Latest R review is a hard gate. K must address every current R-required issue before any next implementation, roadmap item, refactor, or opportunistic cleanup. Partially addressed, unvalidated, or evidence-free responses keep `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None` unless R/human explicitly accepts the risk. Token budgets may justify aggressive editing, not weaker obligations.

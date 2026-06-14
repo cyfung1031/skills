@@ -28,9 +28,9 @@ This package does not ship a root `.ai-dev-loop/` directory. The installer gener
 
 For safest installation, extract the zip into a new empty staging directory first, then copy or install only the intended files into the target project.
 
-Examples are illustrative and use placeholder commit hashes. Real use requires actual repository state, commands, changed files, validation results, and local commit hashes when available. v1.3.1 keeps the existing safety model, adds compact size headroom, clarifies status vocabulary, documents dry-run gates, and aligns quickstart manual setup with installer output.
+Examples are illustrative and use placeholder commit hashes. Real use requires actual repository state, commands, changed files, validation results, and local commit hashes when available. v1.3.3 keeps the safety model and adds production hardening for open-finding carry-forward, code-doc-test consistency, doc drift scans, and scope-change control in the R/K loop.
 
 ## Version
 
-**Version**: 1.3.1
+**Version**: 1.3.3
 **Last Updated**: 2026-06-14

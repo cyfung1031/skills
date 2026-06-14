@@ -5,6 +5,8 @@
 Reviewed the skill instructions and example coordination records for role-local state reconstruction, required R/K markdown records, token-efficient context handoff, status ownership, failure handling, and degraded non-git behavior.
 
 ## Summary
+Documentation consistency was included in the review scope.
+
 
 Changes requested. The skill needs explicit durable R/K record requirements, context compression rules, and deterministic operational boundaries for status ownership, unrelated failures, and degraded mode.
 
@@ -15,6 +17,7 @@ Changes requested. The skill needs explicit durable R/K record requirements, con
 - Recent commits reviewed: `example-k0001`
 - Files reviewed: `SKILL.md`, `.ai-dev-loop/status.md`, `.ai-dev-loop/responses/0001-k-response.md`
 - Commands run: `git status --short`; `grep -n "status.md" SKILL.md`
+- Coverage: reviewed open findings, changed documentation/process paths, status, and example records.
 - Validation result: limited; documentation-only example review
 
 ## Findings

@@ -15,6 +15,8 @@ Kept the examples synchronized with the mandatory templates and recorded the pac
 - Relevant commits: `example-k0003`
 - Files changed: `.ai-dev-loop/status.md`, `.ai-dev-loop/context/0003-context.md`, `.ai-dev-loop/responses/0003-k-response.md`
 - Commands run: `grep -R "## Evidence" .ai-dev-loop/reviews .ai-dev-loop/responses`; `find .ai-dev-loop -maxdepth 3 -type f`; `git status --short`
+- Finding coverage: all open required findings for this example sequence were addressed or carried forward.
+- Drift scan: checked skill/status/example documentation paths affected by the process change.
 - Validation result: pass for example-template consistency in this example workspace
 - Known limitations: example commit hashes are illustrative
 
@@ -30,6 +32,10 @@ Kept the examples synchronized with the mandatory templates and recorded the pac
 ## Spec Updates
 
 None.
+
+## Documentation Updates
+
+Documentation impact checked. No additional user-facing documentation changes were needed beyond the listed example/process files.
 
 ## Implementation Updates
 

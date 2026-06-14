@@ -106,7 +106,7 @@ IDE-based agents: add `SKILL.md` to project rules, workspace instructions, or pi
 Other coding agents: place `SKILL.md` wherever the agent reads persistent instructions.
 ```
 
-Tool-specific setup is only an adapter. The required workflow remains the same: `.ai-dev-loop/` records, synchronized `status.md`, evidence-backed validation, and local git commits when the environment permits them.
+Tool-specific setup is only an adapter. The required workflow remains the same: `.ai-dev-loop/` records, synchronized `status.md`, evidence-backed validation, and local git commits when git is available; otherwise degraded-mode limitations must be recorded.
 
 ### Option 3: Manual project-local instructions
 
@@ -152,6 +152,10 @@ None.
 - Spec/Plan Status: Not started
 - Implementation Status: Not applicable
 - Overall Status: Blocked
+
+## Open Required Findings
+
+None yet; first R review must populate any blockers or required findings.
 
 ## Completed Items
 
@@ -250,7 +254,7 @@ Before R approval, the records should show:
 - spec and implementation status are not conflated,
 - validation commands and results are recorded,
 - known limitations are disclosed,
-- git history contains focused local commits when the environment permits them,
+- git history contains focused local commits when git is available; otherwise degraded-mode limitations must be recorded,
 - the real repository working tree was modified, not a detached artifact copy.
 
 ## Approval Semantics
@@ -286,7 +290,7 @@ Keep `SKILL.md` in the repository and instruct the agent to use it as operating 
 
 ### Chat-based coding agents
 
-Attach or place `SKILL.md` in the workspace and ask the agent to follow it before editing. Ensure it writes `.ai-dev-loop/` records and commits real repository changes when possible.
+Attach or place `SKILL.md` in the workspace and ask the agent to follow it before editing. Ensure it writes `.ai-dev-loop/` records and commits real repository changes when git is available; otherwise records degraded-mode limitations.
 
 ### IDE-based agents
 
@@ -330,15 +334,19 @@ mkdir -p .ai-dev-loop/{reviews,responses,context,decisions}
 
 Then ask your agent to start as R using the quick-start prompt above.
 
-## v1.3.1 Patch Notes
+## v1.3.3 Patch Notes
 
-- Fixed `REFERENCE.md` canonical `Spec/Plan Status` bullet list to remove erroneous `Pending implementation` entry (`SKILL.md` and the validator were already correct; `REFERENCE.md` was inconsistent).
+- Added Open Required Findings carry-forward so unresolved R-required issues survive across role turns and cannot be bypassed by roadmap order.
+- Added code-doc-test consistency gates: K records doc/spec/example/test impact or a no-doc rationale; R verifies direct evidence before approval.
+- Added scope-change controls so K cannot mix unrelated refactors, dependency changes, cleanup, or formatting churn into an R finding fix.
+- Added drift-scan and practical failure-prevention validator safeguards.
+- Retained prior 1.3.x packaging fixes, including `REFERENCE.md` status-vocabulary validation.
 - Removed embedded pseudo-frontmatter block from `REFERENCE.md` body (cosmetic fix; was confusing to YAML-aware tooling).
 - Added `validate_reference_bullet_status_lists` validator check so future bold-header bullet lists in `REFERENCE.md` are verified against the canonical allowed sets.
 - Tightened version-consistency regex in validator to exclude dependency-pin comparators (`>=`, `<=`, `!=`, `==`, `~=`, `>`, `<`), avoiding false positives on non-version numeric strings.
 - Removed vendor-specific `/home/oai` entry from installer `BROAD_DIRS`; `Path.home()` already covers all user home directories.
 
-## v1.3.0 Maintenance Notes
+## v1.3.3 Maintenance Notes
 
 - Keeps the compact `SKILL.md` and optional `REFERENCE.md` structure.
 - Preserves durable R/K separation, evidence-first reviews, status synchronization, git discipline, and degraded-mode honesty.
@@ -350,7 +358,7 @@ Then ask your agent to start as R using the quick-start prompt above.
 
 ## Version
 
-**Version**: 1.3.1
+**Version**: 1.3.3
 **Last Updated**: 2026-06-14
 
 

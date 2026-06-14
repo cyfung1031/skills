@@ -79,6 +79,10 @@ None.
 - Implementation Status: Not applicable
 - Overall Status: Blocked
 
+## Open Required Findings
+
+None yet; first R review must populate any blockers or required findings.
+
 ## Completed Items
 
 None.

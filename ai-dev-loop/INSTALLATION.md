@@ -7,7 +7,7 @@ The **AI Development Loop** is a tool-agnostic workflow for AI-assisted software
 - **R — Reviewer/Auditor**, who audits specs, plans, implementation, risks, and evidence.
 - **K — Implementer/Keeper**, who responds to R, updates specs, modifies the real repository, validates changes, and records evidence.
 
-The loop is intentionally generic. It can be used with any comparable assistant that can read and edit a repository, run commands, and maintain local git history. Named tools are only adapter examples, not requirements.
+The loop is intentionally generic. v1.3.3 adds open-finding carry-forward and code-doc-test consistency gates so K cannot fix code while leaving stale documentation, and R cannot approve without checking that drift. It can be used with any comparable assistant that can read and edit a repository, run commands, and maintain local git history. Named tools are only adapter examples, not requirements.
 
 The only hard requirements are:
 
@@ -16,11 +16,11 @@ The only hard requirements are:
 - the workspace is or can become a git repository,
 - R/K handoff records are written under `.ai-dev-loop/` or an equivalent project-specific directory.
 
-If local commits cannot be created because of environment limits, the agent may update only safe documentation/bootstrap files by default; code/spec/test implementation changes require explicit degraded-mode authorization. The agent must record the limitation, dirty paths, and intended commit message in the R/K record and `status.md`.
+If local commits cannot be created because of environment limits, the agent may update only safe documentation/bootstrap files by default; code/spec/test implementation changes require explicit degraded-mode authorization. The agent must record `Commit: not committed: <reason>`, dirty paths, and the intended `R: ...` or `K: ...` commit message in the R/K record and `status.md`.
 
 ## Safe extraction rule
 
-Extract the zip into a new empty staging directory first, then copy or install only the intended files into the project root. The v1.3.1 zip uses a clean root layout with no wrapper directory and no root `.ai-dev-loop/` template folder, so staging prevents accidental mixing with unrelated workspace files.
+Extract the zip into a new empty staging directory first, then copy or install only the intended files into the project root. The v1.3.3 zip uses a clean root layout with no wrapper directory and no root `.ai-dev-loop/` template folder, so staging prevents accidental mixing with unrelated workspace files.
 
 ## Fastest Safe Install
 
@@ -114,6 +114,10 @@ None.
 - Spec/Plan Status: Not started
 - Implementation Status: Not applicable
 - Overall Status: Blocked
+
+## Open Required Findings
+
+None yet; first R review must populate any blockers or required findings.
 
 ## Completed Items
 
@@ -221,9 +225,9 @@ The single source of truth for current focus, approval state, latest R/K records
 
 The workflow expects strict local git discipline:
 
-- every R review should be committed,
-- every K response should be committed,
-- every spec/code/test update should be committed,
+- every R review and status update must be committed with an `R: ...` subject,
+- every K response and status update must be committed with a `K: ...` subject,
+- every spec/code/test update must be included in the relevant `K: ...` commit,
 - `status.md` should be synchronized before a role turn is complete.
 
 Useful checks:
@@ -272,7 +276,7 @@ K should document the exact command, result, likely cause, whether the failure i
 
 ## Version
 
-**Version**: 1.3.1
+**Version**: 1.3.3
 **Last Updated**: 2026-06-14
 
 ## Git Bootstrap Default
@@ -280,3 +284,8 @@ K should document the exact command, result, likely cause, whether the failure i
 Before initializing git, the agent checks `git rev-parse --show-toplevel` to detect an existing repository, worktree, submodule, or parent repository. The skill allows `git init` only when that command fails, the current directory is confirmed as the intended project root, and the directory is not `$HOME`, `/`, `/mnt/data`, or another broad container/workspace parent. The agent must not push, configure remotes, or change external repository settings unless the user explicitly requests it.
 
 If git cannot be initialized or commits cannot be created, the agent records degraded mode in `status.md` and the current R/K record, lists changed paths, and does not proceed with code implementation beyond safe documentation/bootstrap work unless explicitly authorized.
+
+
+## Documentation consistency gate
+
+K must keep documentation/specs/examples aligned with behavior changes or record why no documentation update is needed. R must check for documentation discrepancy before approval.

@@ -9,9 +9,9 @@ import sys
 import tempfile
 from pathlib import Path
 
-MAX_SKILL_BYTES = 10_000
-MAX_SKILL_LINES = 300
-MAX_SKILL_WORDS = 1_400
+MAX_SKILL_BYTES = 16_500
+MAX_SKILL_LINES = 260
+MAX_SKILL_WORDS = 2_250
 
 ALLOWED_OVERALL = {
     "Blocked",
@@ -84,6 +84,7 @@ REQUIRED_STATUS_HEADINGS = [
     "Latest Context Note",
     "Decisions",
     "Approval State",
+    "Open Required Findings",
     "Completed Items",
     "Next Expected Role Action",
     "Next Item",
@@ -104,6 +105,7 @@ REQUIRED_K_HEADINGS = [
     "Evidence",
     "Finding Responses",
     "Spec Updates",
+    "Documentation Updates",
     "Implementation Updates",
     "Tests and Validation",
     "Remaining Questions",
@@ -437,6 +439,23 @@ def validate_compact_skill(root_skill: Path, root: Path, errors: list[str]) -> N
         "Do not load `REFERENCE.md` by default for simple role turns",
         "If `SKILL.md`, `REFERENCE.md`, examples, and status records conflict",
         "extract into a new empty staging directory first",
+        "K must address current R-required issues before any new implementation",
+        "K shall not move to the next implementation while",
+        "Current-issue lock",
+        "Latest R review is a hard gate",
+        "No silent softening",
+        "open required findings block next implementation",
+        "Documentation consistency is a hard gate",
+        "Documentation drift prevention",
+        "R must check documentation discrepancy",
+        "Open required findings ledger",
+        "K must address all open required findings listed in status",
+        "R must carry forward unresolved findings",
+        "Scope-change freeze",
+        "Scope-change control",
+        "Code-doc-test matrix",
+        "R must verify code-doc-test consistency",
+        "drift scan",
     ]
     for phrase in required_phrases:
         if phrase not in text:
@@ -461,6 +480,59 @@ def validate_embedded_record_templates(root: Path, errors: list[str]) -> None:
         for expected_line in [EXPECTED_R_SEVERITY_LINE, EXPECTED_R_FINDING_STATUS_LINE]:
             if expected_line not in text:
                 fail(f"{rel_path} missing canonical R finding template line: {expected_line}", errors)
+
+
+def extract_manual_status_blocks(text: str) -> list[str]:
+    """Return manual status.md heredoc bodies embedded in markdown docs."""
+    blocks: list[str] = []
+    marker = "status.md <<'EOF'"
+    start = 0
+    while True:
+        marker_index = text.find(marker, start)
+        if marker_index == -1:
+            break
+        body_start = text.find("\n", marker_index)
+        if body_start == -1:
+            break
+        body_start += 1
+        body_end = text.find("\nEOF", body_start)
+        if body_end == -1:
+            break
+        blocks.append(text[body_start:body_end])
+        start = body_end + 4
+    return blocks
+
+
+def validate_manual_status_templates(root: Path, errors: list[str]) -> None:
+    """Ensure manual-install docs keep the same required status ledger as the installer."""
+    doc_paths = ["QUICKSTART.md", "INSTALLATION.md", "COMPLETE-PACKAGE-GUIDE.md"]
+    for rel_path in doc_paths:
+        path = root / rel_path
+        if not path.exists():
+            continue
+        text = read_text(path)
+        if "## Open Required Findings" not in text:
+            fail(f"{rel_path} manual status template missing: ## Open Required Findings", errors)
+        blocks = extract_manual_status_blocks(text)
+        if not blocks:
+            fail(f"{rel_path} missing manual status.md heredoc template", errors)
+            continue
+        for index, block in enumerate(blocks, start=1):
+            for heading in REQUIRED_STATUS_HEADINGS:
+                if f"## {heading}" not in block:
+                    fail(f"{rel_path} manual status template #{index} missing heading: {heading}", errors)
+            if "first R review must populate" not in block:
+                fail(f"{rel_path} manual status template #{index} missing Open Required Findings bootstrap text", errors)
+
+
+def validate_installer_status_template(root: Path, errors: list[str]) -> None:
+    installer = root / "scripts" / "install-ai-dev-loop-template.py"
+    if not installer.exists():
+        return
+    text = read_text(installer)
+    for phrase in ["## Open Required Findings", "first R review must populate"]:
+        if phrase not in text:
+            fail(f"installer status template missing: {phrase}", errors)
 
 
 def validate_installer_smoke_test(root: Path, errors: list[str]) -> None:
@@ -547,6 +619,8 @@ def main() -> int:
     validate_reference_bullet_status_lists(root, errors)
     validate_k_response_status_templates(root, errors)
     validate_embedded_record_templates(root, errors)
+    validate_manual_status_templates(root, errors)
+    validate_installer_status_template(root, errors)
     validate_installer_smoke_test(root, errors)
 
     for status_path in [root / "examples" / ".ai-dev-loop" / "status.md"]:
