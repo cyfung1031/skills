@@ -334,41 +334,25 @@ mkdir -p .ai-dev-loop/{reviews,responses,context,decisions}
 
 Then ask your agent to start as R using the quick-start prompt above.
 
-## v1.4.1 Patch Notes
+## v1.4.2 Patch Notes
 
-- Adds a terminal R review gate: K responses cannot be final approval, and R must verify implementation/documentation/validation evidence before `Stop`.
+- Compressed `SKILL.md` by ~200 words (2513→2316) to reduce per-turn token load: collapsed `## Autonomous workflow` to a single paragraph; removed two redundant bullets from `## Practical failure prevention` (already enforced in `## Gates` and `## Core principles`); compressed R and K post-template prose; removed validator/installer hardening sentence from `## Failure handling` (detail retained in `REFERENCE.md`).
+- Added optional-omission rule: in live `status.md`, `## Next Item` and `## Blockers` may be omitted when value is None.
+- Added `REFERENCE.md` pointer to `## Failure handling` in `SKILL.md` so the omitted detail remains discoverable.
+- All safety gates, required phrases, clarification/objection paths, terminal R review gate, and whole-change impact scan responsibility are unchanged.
+- No changes to validator or installer scripts.
 
-- Replaced backtracking-prone review/response block extraction with line-by-line parsing in `scripts/validate-ai-dev-loop-package.py`.
-- Normalized Markdown-decorated status option lists before vocabulary comparison.
-- Added local installer write-error handling for permissions, locked files, and OS file-handle failures.
-
-
-- Added explicit clarification/objection gates: K can ask R when requirements are unclear and can challenge questionable R findings with evidence and a proposed safe path.
-- Clarified that autonomous continuation does not override unresolved K clarification/objection gates; R must answer, revise, uphold with evidence, or accept risk before K continues implementation.
-- Clarified whole-change responsibility: R findings are required outcomes, not exhaustive K task lists. K must scan and fix directly related docs, examples, tests, validators, scripts, installer/package guidance, and status-template drift. This includes affected files that R did not explicitly list.
-- Kept Open Required Findings carry-forward so unresolved R-required issues survive across role turns and cannot be bypassed by roadmap order.
-- Kept code-doc-test consistency gates: K records doc/spec/example/test impact or a no-doc rationale; R verifies direct evidence before approval.
-- Kept scope-change controls so K cannot mix unrelated refactors, dependency changes, cleanup, or formatting churn into an R finding fix.
-- Updated whole-change impact scan and practical failure-prevention validator safeguards to cover clarification/objection gates plus related docs/examples/tests/validators/scripts/package drift.
-- Retained prior 1.3.x packaging fixes, including `REFERENCE.md` status-vocabulary validation.
-- Removed embedded pseudo-frontmatter block from `REFERENCE.md` body (cosmetic fix; was confusing to YAML-aware tooling).
-- Added `validate_reference_bullet_status_lists` validator check so future bold-header bullet lists in `REFERENCE.md` are verified against the canonical allowed sets.
-- Tightened version-consistency regex in validator to exclude dependency-pin comparators (`>=`, `<=`, `!=`, `==`, `~=`, `>`, `<`), avoiding false positives on non-version numeric strings.
-- Removed vendor-specific `/home/oai` entry from installer `BROAD_DIRS`; `Path.home()` already covers all user home directories.
-
-## v1.4.1 Maintenance Notes
+## v1.4.2 Maintenance Notes
 
 - Keeps the compact `SKILL.md` and optional `REFERENCE.md` structure.
 - Preserves durable R/K separation, evidence-first reviews, status synchronization, git discipline, and degraded-mode honesty.
-- Keeps conservative token-efficiency guidance while sizing `SKILL.md` budgets with modest maintenance headroom instead of near-zero slack.
 - Keeps provider-neutral byte, line, word, structure, status, template, and packaging checks.
 - Uses the documented clean root zip layout with no wrapper directory.
-- Updates the canonical K template from `Remaining Questions` to `Clarifications or Objections`; existing older records remain readable, while new records use the v1.4.1 heading.
-- Applies workflow fixes for unclear requirements and justified K objections while preserving auditability, status synchronization, and `SKILL.md` size headroom.
+- Retains explicit clarification/objection gates, terminal R review gate, whole-change responsibility, and `Clarifications or Objections` K template heading. R findings are required outcomes, not exhaustive K task lists; K must fix related files that R did not explicitly list.
 
 ## Version
 
-**Version**: 1.4.1
+**Version**: 1.4.2
 **Last Updated**: 2026-06-16
 
 

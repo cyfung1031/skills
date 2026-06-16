@@ -1,6 +1,6 @@
 ---
 name: ai-dev-loop
-version: 1.4.1
+version: 1.4.2
 scripts: [scripts/install-ai-dev-loop-template.py, scripts/validate-ai-dev-loop-package.py]
 references: [README.md, REFERENCE.md]
 ---
@@ -32,7 +32,7 @@ Most restrictive wins: unresolved required fixes or unresolved K questions/objec
 - If `SKILL.md`, `REFERENCE.md`, examples, and status records conflict: user instruction, repo instructions, `SKILL.md`, current status, decisions, `REFERENCE.md`, examples.
 
 ## Token Efficiency
-Keep records compact: target <350 words per R/K record; table findings; summarize logs; reload durable state. Every 4-5 turns, move resolved status history into `context/` or `decisions/`.
+Keep records compact: target <350 words per R/K record; table findings; summarize logs; reload durable state. Every 4-5 turns, move resolved status history into `context/` or `decisions/`. In live `status.md`, omit `## Next Item` and `## Blockers` when value is None.
 
 ## Workspace bootstrap
 1. Locate project root with `git rev-parse --show-toplevel`; if it fails, use the root-confirmation checks below.
@@ -117,7 +117,7 @@ R writes `.ai-dev-loop/reviews/NNNN-r-review.md`:
 - Overall Status: <value>
 ## Next Expected K Action
 ```
-R approves only when required issues are resolved or accepted risk with evidence. Required follow-up means `Changes requested`; non-blocking notes use `Approved with notes`. R verifies files, diffs, docs/specs, examples, tests, status, and open-finding ledger. Documentation discrepancy, missing tests, stale examples, or unintended scope change is a finding. R must answer, revise, uphold with evidence, or accept risk for each K clarification/objection in `## Clarification and Objection Responses` before expecting more implementation.
+R approves only when required issues are resolved or accepted risk with evidence. Required follow-up means `Changes requested`; non-blocking notes use `Approved with notes`. Documentation discrepancy, missing tests, or unintended scope change is a finding. R must answer each K clarification/objection in `## Clarification and Objection Responses` before expecting more implementation.
 
 ## K role
 K reads latest R review, status open-finding ledger, context/decisions, repo state, docs/specs/examples, and changed files. K responds to every open required finding. K then performs a whole-change impact scan and updates all directly affected specs/docs/examples/tests/validators/scripts/package guidance, not only literal R bullet items or requested files. K validates, records evidence, and keeps scope limited to active findings plus necessary related consistency fixes; unrelated adjacent work becomes a new finding/decision/next item.
@@ -146,7 +146,7 @@ K writes `.ai-dev-loop/responses/NNNN-k-response.md`:
 ## Compact Context
 ## Next Expected R Action
 ```
-K responses are never final approval. After K changes, `## Next Expected R Action` and `status.md` must request R review unless K is blocked and records the blocker. K must not mark findings resolved without evidence. K answers every open R-required finding from latest review and `status.md` before next roadmap item/refactor/cleanup/unrelated implementation. Changed behavior requires docs/specs/examples/install/quickstart/reference updates or `Documentation Updates: Not needed because <evidence>`. K runs a whole-change impact scan against docs/specs/examples/tests/validators/scripts/package guidance. If any item is unresolved, unvalidated, unclear, objected, or missing evidence, set `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None`. Then ask R, object, or block with disputed requirement, evidence, risk, safe path, and possible partial progress.
+K responses are never final approval. After K changes, `status.md` and `## Next Expected R Action` must request R review unless K is blocked and records the blocker. K must not mark findings resolved without evidence. Changed behavior requires `Documentation Updates` or `Not needed because <evidence>`. If any item is unresolved, unvalidated, or missing evidence, set `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None`; then ask R, object, or block with disputed requirement, evidence, risk, safe path, and possible partial progress.
 
 ## Context compression
 Use `.ai-dev-loop/context/NNNN-context.md` when context is long, stale, near handoff, or may exceed memory. Preserve focus/scope, status, findings, blockers, decisions, changed paths, commits, validation, next action. Never remove open findings, blockers, validation limits, human constraints, changed paths, commits, approval status.
@@ -166,18 +166,11 @@ R/K resolve ordinary ambiguity from repo evidence first. K can update low-risk s
 - Package maintenance must keep non-negotiable rules in always-loaded `SKILL.md`; `REFERENCE.md` may expand but must not weaken them.
 
 ## Practical failure prevention
-- Open-finding carry-forward: every R review and K response must reconcile the `status.md` open required findings list; removed items require R closure or accepted-risk evidence.
 - Scope-change control: K fixes only the active findings unless R explicitly authorizes added scope; discovered adjacent work becomes a new finding, decision, or next item after approval.
 - Code-doc-test-harness matrix: K records changed behavior, changed files, related docs/spec/examples/tests/validators/scripts/package guidance touched or no-impact rationale, validation, and remaining risk. R verifies that matrix before approval.
-- Evidence granularity: generic claims like "updated docs" or "tests pass" are insufficient without paths, commands, results, and finding IDs.
 
 ## Autonomous workflow
-1. **Spec review**: R reviews requirements/plan. If authorized, set `Spec/Plan Status: Approved for implementation`, `Implementation Status: Not started`, and `Overall Status: Pending implementation`.
-2. **Implementation**: K implements only within authorized scope, validates, records evidence, and asks for R review.
-3. **Impl review**: R reviews diffs/tests/status. R requests changes, approves with notes, approves, or blocks.
-4. **Continuation**: Continue only within explicitly authorized scope.
-
-Loop ends only when R records `Approved`, or `Approved with notes` with no required K follow-up. A K response must not set `Next Expected Role Action: Stop`, `Overall Status: Approved`, or any terminal approval state; K hands off to R for final review. If R records `Blocked`/`Changes requested`, or K records an unresolved clarification/objection, resolve that gate before next implementation. Do not proceed by roadmap order, convenience, or partial fixes. Trigger blocker when: same finding fails after 3 K attempts; R/K disagree twice on intent/risk/external context; 2 rounds make no material change; or item exceeds 6 R/K rounds. Write/commit blocker, mark `Blocked`, stop.
+Phases: spec review (R) → implementation (K) → impl review (R) → continuation within authorized scope. Loop ends only when R records `Approved` or `Approved with notes` with no required K follow-up. K must not set terminal approval state; hand off to R for final review. Trigger blocker when: same finding fails after 3 K attempts; R/K disagree twice on intent/risk/external context; 2 rounds make no material change; or item exceeds 6 R/K rounds. Write/commit blocker, mark `Blocked`, stop.
 
 ## Gates
 Before any role turn is complete:
@@ -203,9 +196,7 @@ Command order:
 7. Record real hash or degraded reason.
 
 ## Failure handling
-Validator/installer hardening: validators parse Markdown record blocks line-by-line, normalize harmless option-list Markdown before comparison, and avoid backtracking-prone whole-file section regexes; installers catch local write `PermissionError`/`OSError` and report actionable permission or file-lock diagnostics.
-
-If commands fail, record exact command, failure, impact, likely cause, alternatives. Fix K-caused issues when repo state permits and commit. For pre-existing/flaky/environment failures, record baseline evidence and why unrelated. R can approve with notes only with adequate alternative validation. Block if failure prevents validation, hides regression risk, or creates security/data-loss risk. Human escalation requires blocked safe progress, missing workspace evidence, and material product/data/security/compliance/cost/user risk; write/commit blocker first.
+If commands fail, record exact command, failure, impact, likely cause, alternatives. Fix K-caused issues and commit. For pre-existing/flaky/environment failures, record baseline evidence and why unrelated. R can approve with notes only with adequate alternative validation. Block if failure prevents validation, hides regression risk, or creates security/data-loss risk. Human escalation requires blocked safe progress, missing workspace evidence, and material product/data/security/compliance/cost/user risk; write/commit blocker first. See `REFERENCE.md` for validator/installer hardening details.
 
 ## Operating instruction
 At start, read this file and status. Determine next role, perform only that role, write record, update status, validate, commit when required, summarize paths/evidence.

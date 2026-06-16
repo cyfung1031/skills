@@ -28,10 +28,10 @@ This package does not ship a root `.ai-dev-loop/` directory. The installer gener
 
 For safest installation, extract the zip into a new empty staging directory first, then copy or install only the intended files into the target project.
 
-Examples are illustrative and use placeholder commit hashes. Real use requires actual repository state, commands, changed files, validation results, and local commit hashes when available. v1.4.1 keeps the safety model and adds explicit R/K clarification and objection gates. K can ask R for clarification or raise evidence-backed objections instead of blindly implementing unclear or questionable requirements. Any unresolved K question or objection is a loop gate: R must answer, revise, uphold with evidence, or accept risk before K continues implementation. v1.4.1 also makes terminal approval R-owned: after K responds, R must review the evidence before the loop can stop. R findings are required outcomes, not exhaustive task lists. K must also fix directly related docs/examples/tests/validator/installer/package discrepancies discovered while implementing, even when R did not name those files explicitly. v1.4.1 also hardens package scripts: validator Markdown block parsing is line-by-line, option-list validation normalizes harmless Markdown formatting, and installer write failures return actionable diagnostics.
+Examples are illustrative and use placeholder commit hashes. Real use requires actual repository state, commands, changed files, validation results, and local commit hashes when available. v1.4.2 reduces SKILL.md token load by compressing sections duplicated across `## Gates`, `## Core principles`, and `## Autonomous workflow`; moves validator/installer hardening detail to `REFERENCE.md`; and adds an optional-omission rule for `## Next Item` / `## Blockers` in live `status.md`. Safety model, explicit R/K clarification and objection gates, terminal R review gate, and whole-change impact scan responsibility are unchanged. R findings are required outcomes, not exhaustive task lists. K must fix directly related docs/examples/tests/validator/installer/package discrepancies discovered while implementing, even when R did not name those files explicitly.
 Committed historical records may contain `pending current commit` for the same commit that introduced the record/status update; later turns must treat that literal value as a closed audit marker, not as missing evidence.
 
 ## Version
 
-**Version**: 1.4.1
+**Version**: 1.4.2
 **Last Updated**: 2026-06-16

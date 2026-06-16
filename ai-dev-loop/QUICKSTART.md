@@ -113,9 +113,9 @@ python3 scripts/validate-ai-dev-loop-package.py
 
 ## Version
 
-## v1.4.1 Script Hardening Note
+## v1.4.2 Notes
 
-The package validator uses line-by-line Markdown block parsing for review/response records. It does not use global backtracking section regexes for those blocks. Status option-list checks normalize harmless Markdown decorations before comparison. Installer write failures report permission or file-lock diagnostics instead of raw tracebacks.
+v1.4.2 reduces SKILL.md token load (~200 words) by compressing `## Autonomous workflow`, `## Failure handling`, and `## Practical failure prevention` to remove prose duplicated in `## Gates` and `## Core principles`. Validator/installer hardening detail moved to `REFERENCE.md`. Optional-omission rule added for `## Next Item` / `## Blockers` in live `status.md`. All safety gates, clarification/objection paths, and R-owned terminal approval are unchanged. See `REFERENCE.md` for validator/installer hardening details (line-by-line block parsing, option-list normalization, installer write-error diagnostics).
 
-**Version**: 1.4.1
+**Version**: 1.4.2
 **Last Updated**: 2026-06-16

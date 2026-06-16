@@ -983,28 +983,27 @@ Proceed through review, response, implementation, and follow-up loops by resolvi
 
 Always leave the repository in a traceable state with committed local history for every completed R or K action, using `R:` and `K:` commit subjects; otherwise record the commit limitation and exact uncommitted paths.
 
-## v1.4.1 Validator and Installer Hardening
+## v1.4.2 Validator and Installer Hardening
 
 - Parse R finding blocks and K response blocks line-by-line. Do not use full-document `.*?` or `[\s\S]*?` lookahead regexes for Markdown block extraction. This keeps validation linear in input size and avoids ReDoS-style backtracking on malformed headings.
 - Normalize status option-list vocabulary before comparison: remove common Markdown decoration, strip label prefixes, split on `|`, trim each item, and compare sets of values. Keep separate canonical status-value validation for actual record state.
 - Wrap installer template writes with local `PermissionError` and `OSError` handling. Report permission or file-lock causes with actionable messages instead of raw tracebacks.
 
 
-## v1.4.1 Terminal R Review Gate
+## v1.4.2 Terminal R Review Gate
 
 K responses are implementation evidence, not final approval. After any K response that makes changes, K must request R review via `status.md`. R must inspect the implementation and documentation evidence before recording `Approved`, `Approved with notes`, or `Stop`.
 
-## v1.4.1 Token-Efficiency and Packaging Notes
+## v1.4.2 Token-Efficiency and Packaging Notes
 
-This revision keeps durable R/K separation, open-finding carry-forward, code-doc-test consistency checks, evidence-first reviews, synchronized status, git discipline, degraded-mode honesty, and optional reference material. It also fixes the prior validation/package mismatch:
+This revision reduces SKILL.md token load (~200 words) while preserving all safety obligations. Changes in this version:
 
-- `SKILL.md` remains the compact authoritative policy and fits a realistic validator budget with modest maintenance headroom.
-- `REFERENCE.md` remains optional and skippable for simple turns.
-- R/K templates remain canonical and auditable.
-- Context compression summarizes logs without deleting risk evidence.
-- Resolved `status.md` history may move into context or decision notes.
-- Release zips use the documented clean root layout.
-- Validator size checks remain provider-neutral: bytes, lines, and words, not model-specific tokenizers; limits must leave modest headroom for maintenance while still preventing bloat.
+- `## Autonomous workflow` compressed to a single paragraph; verbose 4-step list removed (derivable from role descriptions and Gates).
+- `## Practical failure prevention` trimmed to 2 bullets; "Open-finding carry-forward" and "Evidence granularity" bullets removed (already enforced by Core principles and Gates).
+- R and K post-template prose compressed; duplicate restatements of Gate obligations removed.
+- Validator/installer hardening sentence removed from `## Failure handling` in SKILL.md; this section (`## v1.4.2 Validator and Installer Hardening` above) remains authoritative in REFERENCE.md.
+- Optional-omission rule added: in live `status.md`, `## Next Item` and `## Blockers` may be omitted when None.
+- All required validator phrases, record templates, status vocabulary, and safety gates unchanged.
 
 ## Production hardening addendum
 Latest R review is a hard gate. K must address every current R-required issue and all directly related consistency fallout before any next implementation, roadmap item, refactor, or opportunistic cleanup. Partially addressed, unvalidated, or evidence-free responses keep `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None` unless R/human explicitly accepts the risk. Token budgets may justify aggressive editing, not weaker obligations.
