@@ -983,27 +983,27 @@ Proceed through review, response, implementation, and follow-up loops by resolvi
 
 Always leave the repository in a traceable state with committed local history for every completed R or K action, using `R:` and `K:` commit subjects; otherwise record the commit limitation and exact uncommitted paths.
 
-## v1.4.2 Validator and Installer Hardening
+## v1.4.3 Validator and Installer Hardening
 
 - Parse R finding blocks and K response blocks line-by-line. Do not use full-document `.*?` or `[\s\S]*?` lookahead regexes for Markdown block extraction. This keeps validation linear in input size and avoids ReDoS-style backtracking on malformed headings.
 - Normalize status option-list vocabulary before comparison: remove common Markdown decoration, strip label prefixes, split on `|`, trim each item, and compare sets of values. Keep separate canonical status-value validation for actual record state.
 - Wrap installer template writes with local `PermissionError` and `OSError` handling. Report permission or file-lock causes with actionable messages instead of raw tracebacks.
 
 
-## v1.4.2 Terminal R Review Gate
+## v1.4.3 Terminal R Review and Continuation Gate
 
-K responses are implementation evidence, not final approval. After any K response that makes changes, K must request R review via `status.md`. R must inspect the implementation and documentation evidence before recording `Approved`, `Approved with notes`, or `Stop`.
+K responses are implementation evidence, not final approval. After any K response that makes changes, K must request R review via `status.md`; the same agent continues into that R review in the same session unless a valid stop condition exists. R must inspect the implementation and documentation evidence before recording `Approved`, `Approved with notes`, or `Stop`.
 
-## v1.4.2 Token-Efficiency and Packaging Notes
+## v1.4.3 Continuation and Packaging Notes
 
-This revision reduces SKILL.md token load (~200 words) while preserving all safety obligations. Changes in this version:
+This revision keeps the compact SKILL.md posture while removing the one-role-then-stop ambiguity. Changes in this version:
 
-- `## Autonomous workflow` compressed to a single paragraph; verbose 4-step list removed (derivable from role descriptions and Gates).
-- `## Practical failure prevention` trimmed to 2 bullets; "Open-finding carry-forward" and "Evidence granularity" bullets removed (already enforced by Core principles and Gates).
-- R and K post-template prose compressed; duplicate restatements of Gate obligations removed.
-- Validator/installer hardening sentence removed from `## Failure handling` in SKILL.md; this section (`## v1.4.2 Validator and Installer Hardening` above) remains authoritative in REFERENCE.md.
-- Optional-omission rule added: in live `status.md`, `## Next Item` and `## Blockers` may be omitted when None.
-- All required validator phrases, record templates, status vocabulary, and safety gates unchanged.
+- `## Operating instruction` now requires reloading status and continuing the next expected R/K role in the same session.
+- `## Autonomous workflow` now says a finished role turn hands off to the other role, not to the user.
+- The status template clarifies that R/K in `Next Expected Role Action` means continue now; writing that field is not completion.
+- `## Gates` now includes a pre-stop check: if the next action names R or K, the loop is not complete.
+- Validator required phrases protect the continuation rules along with the existing terminal R review gate.
+- Existing record templates, status vocabulary, clarification/objection path, token-efficiency posture, and safety gates remain unchanged.
 
 ## Production hardening addendum
 Latest R review is a hard gate. K must address every current R-required issue and all directly related consistency fallout before any next implementation, roadmap item, refactor, or opportunistic cleanup. Partially addressed, unvalidated, or evidence-free responses keep `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None` unless R/human explicitly accepts the risk. Token budgets may justify aggressive editing, not weaker obligations.

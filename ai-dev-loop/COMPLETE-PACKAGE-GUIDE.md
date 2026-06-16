@@ -334,25 +334,25 @@ mkdir -p .ai-dev-loop/{reviews,responses,context,decisions}
 
 Then ask your agent to start as R using the quick-start prompt above.
 
-## v1.4.2 Patch Notes
+## v1.4.3 Patch Notes
 
-- Compressed `SKILL.md` by ~200 words (2513→2316) to reduce per-turn token load: collapsed `## Autonomous workflow` to a single paragraph; removed two redundant bullets from `## Practical failure prevention` (already enforced in `## Gates` and `## Core principles`); compressed R and K post-template prose; removed validator/installer hardening sentence from `## Failure handling` (detail retained in `REFERENCE.md`).
-- Added optional-omission rule: in live `status.md`, `## Next Item` and `## Blockers` may be omitted when value is None.
-- Added `REFERENCE.md` pointer to `## Failure handling` in `SKILL.md` so the omitted detail remains discoverable.
-- All safety gates, required phrases, clarification/objection paths, terminal R review gate, and whole-change impact scan responsibility are unchanged.
-- No changes to validator or installer scripts.
+- Added an explicit same-session continuation driver to `SKILL.md`: completed R/K records hand off to the other role, not to the user, unless a terminal stop condition holds.
+- Reworded the operating instruction so `perform that role only` preserves record-level role separation without implying one-role-per-session stopping.
+- Clarified that writing `Next Expected Role Action` is not performing it; if the value names R or K, the agent must continue that role now.
+- Added a pre-stop gate requiring the agent to confirm terminal `Stop`, committed blocker, or human-only authority before addressing the user.
+- Added validator required phrases to protect these continuation rules in future package revisions.
 
-## v1.4.2 Maintenance Notes
+## v1.4.3 Maintenance Notes
 
 - Keeps the compact `SKILL.md` and optional `REFERENCE.md` structure.
-- Preserves durable R/K separation, evidence-first reviews, status synchronization, git discipline, and degraded-mode honesty.
+- Preserves durable R/K separation, evidence-first reviews, status synchronization, git discipline, degraded-mode honesty, terminal R approval, and same-session continuation.
 - Keeps provider-neutral byte, line, word, structure, status, template, and packaging checks.
 - Uses the documented clean root zip layout with no wrapper directory.
 - Retains explicit clarification/objection gates, terminal R review gate, whole-change responsibility, and `Clarifications or Objections` K template heading. R findings are required outcomes, not exhaustive K task lists; K must fix related files that R did not explicitly list.
 
 ## Version
 
-**Version**: 1.4.2
+**Version**: 1.4.3
 **Last Updated**: 2026-06-16
 
 

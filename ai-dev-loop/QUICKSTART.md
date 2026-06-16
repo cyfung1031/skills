@@ -89,6 +89,7 @@ Tell your coding assistant:
 Use .ai-dev-loop/SKILL.md as the operating instructions.
 Read .ai-dev-loop/status.md. Begin with R unless status says K is next.
 Write durable records under .ai-dev-loop/ and update status.md before finishing the role turn.
+If status names a next R/K action, continue that role in this same session instead of returning to me.
 ```
 
 
@@ -113,9 +114,9 @@ python3 scripts/validate-ai-dev-loop-package.py
 
 ## Version
 
-## v1.4.2 Notes
+## v1.4.3 Notes
 
-v1.4.2 reduces SKILL.md token load (~200 words) by compressing `## Autonomous workflow`, `## Failure handling`, and `## Practical failure prevention` to remove prose duplicated in `## Gates` and `## Core principles`. Validator/installer hardening detail moved to `REFERENCE.md`. Optional-omission rule added for `## Next Item` / `## Blockers` in live `status.md`. All safety gates, clarification/objection paths, and R-owned terminal approval are unchanged. See `REFERENCE.md` for validator/installer hardening details (line-by-line block parsing, option-list normalization, installer write-error diagnostics).
+v1.4.3 fixes a stop-at-handoff failure mode without changing the R/K model: `SKILL.md` now says a completed role turn hands off to the other role inside the same session, `Next Expected Role Action` is not itself completion, and the agent must confirm a terminal stop condition before addressing the user. Validator required phrases now protect those continuation rules. Existing safety gates, clarification/objection paths, R-owned terminal approval, token-efficiency posture, and whole-change impact scan responsibility are unchanged.
 
-**Version**: 1.4.2
+**Version**: 1.4.3
 **Last Updated**: 2026-06-16

@@ -1,6 +1,6 @@
 ---
 name: ai-dev-loop
-version: 1.4.2
+version: 1.4.3
 scripts: [scripts/install-ai-dev-loop-template.py, scripts/validate-ai-dev-loop-package.py]
 references: [README.md, REFERENCE.md]
 ---
@@ -20,7 +20,7 @@ Most restrictive wins: unresolved required fixes or unresolved K questions/objec
 
 ## Core principles
 - Durable files, not chat memory, are source of truth. Do not rely on hidden chain-of-thought, stale context, or assumptions; copy relevant chat facts into `.ai-dev-loop/`.
-- Keep R/K separate; switch roles only after writing records, committing when git is available, and reloading state. Use the same local branch unless user requests a switch.
+- Keep R/K separate in records; never act as both roles in one record. Role switch is internal: after a completed R or K turn, reload status and continue with the next expected R/K action in the same session unless a stop condition below holds. Use the same local branch unless user requests a switch.
 - Every role turn writes durable markdown. R records reviews/concerns/approvals; K records responses/decisions/spec/code/test updates. Do not invent evidence; record files, commands, outputs, commits, limits.
 - Respect `status.md` scope. Continue the current loop until R has no required follow-up. Current-issue lock: K must finish, block, or obtain written R/human risk acceptance for every current R-required finding before starting any next item, refactor, cleanup, or opportunistic implementation.
 - Do not ask humans for ordinary engineering choices when repo context is enough. K can ask R for clarification or object to a requirement/finding that is unclear, inconsistent, unsupported, unsafe, or likely wrong. K records evidence, risk, proposed safe path, and whether safe partial progress exists.
@@ -83,7 +83,7 @@ Role-local state sources are mandatory: read git status/log/diff, `status.md`, l
 ## Completed Items
 <done items or None>
 ## Next Expected Role Action
-<R action, K action, human action, or Stop; Stop only after an R review approves>
+<R action, K action, human action, or Stop; Stop only after an R review approves; R/K means continue now>
 ## Next Item
 <next authorized item or None>
 ## Blockers
@@ -170,7 +170,7 @@ R/K resolve ordinary ambiguity from repo evidence first. K can update low-risk s
 - Code-doc-test-harness matrix: K records changed behavior, changed files, related docs/spec/examples/tests/validators/scripts/package guidance touched or no-impact rationale, validation, and remaining risk. R verifies that matrix before approval.
 
 ## Autonomous workflow
-Phases: spec review (R) → implementation (K) → impl review (R) → continuation within authorized scope. Loop ends only when R records `Approved` or `Approved with notes` with no required K follow-up. K must not set terminal approval state; hand off to R for final review. Trigger blocker when: same finding fails after 3 K attempts; R/K disagree twice on intent/risk/external context; 2 rounds make no material change; or item exceeds 6 R/K rounds. Write/commit blocker, mark `Blocked`, stop.
+Phases: spec review (R) → implementation (K) → impl review (R) → continuation within authorized scope. A finished role turn hands off to the other role inside the same session, not to the user. Writing `Next Expected Role Action` is not performing it; if it names R or K, execute that role next. Loop ends only when R records `Approved` or `Approved with notes` with no required K follow-up and `Next Expected Role Action: Stop`. K must not set terminal approval state; hand off to R for final review. Trigger blocker when: same finding fails after 3 K attempts; R/K disagree twice on intent/risk/external context; 2 rounds make no material change; or item exceeds 6 R/K rounds. Write/commit blocker, mark `Blocked`, stop.
 
 ## Gates
 Before any role turn is complete:
@@ -181,6 +181,7 @@ Before any role turn is complete:
 - Tests are added/updated for changed behavior where practical; validation commands/results are recorded; documentation updates or no-doc rationale are recorded.
 - Implementation edits are in the real repository working tree, not only detached artifacts/copies.
 - `status.md` is synchronized with latest files and approval state; terminal `Stop` or final approval appears only after an R review, never directly after a K response.
+- Before ending the session or addressing the user, confirm a terminal stop condition holds; if `Next Expected Role Action` names R or K, continue that role now.
 - Required commits exist when git is available; hashes are recorded only when real.
 - No unrelated user changes were overwritten, staged, or committed.
 - Degraded mode limitations are explicit.
@@ -199,4 +200,4 @@ Command order:
 If commands fail, record exact command, failure, impact, likely cause, alternatives. Fix K-caused issues and commit. For pre-existing/flaky/environment failures, record baseline evidence and why unrelated. R can approve with notes only with adequate alternative validation. Block if failure prevents validation, hides regression risk, or creates security/data-loss risk. Human escalation requires blocked safe progress, missing workspace evidence, and material product/data/security/compliance/cost/user risk; write/commit blocker first. See `REFERENCE.md` for validator/installer hardening details.
 
 ## Operating instruction
-At start, read this file and status. Determine next role, perform only that role, write record, update status, validate, commit when required, summarize paths/evidence.
+At start, read this file and status. Determine the next role and perform that role only; write record, update status, validate, commit when required. Then reload status and continue the next expected R/K role in the same session. Do not stop after a commit, summary, or written handoff. Stop and address the user only when: R approved with no open required findings and `Next Expected Role Action: Stop`; a committed blocker sets `Overall Status: Blocked`; or K needs human-only authority for missing requirements, secrets, or destructive/irreversible/external action. If none holds, execute the next role now; summarize paths/evidence only at a valid stop.

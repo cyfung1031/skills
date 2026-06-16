@@ -716,6 +716,10 @@ def validate_compact_skill(root_skill: Path, root: Path, errors: list[str]) -> N
         "not only literal R bullet items or requested files",
         "K responses are never final approval",
         "terminal `Stop` or final approval appears only after an R review",
+        "A finished role turn hands off to the other role inside the same session",
+        "Writing `Next Expected Role Action` is not performing it",
+        "Before ending the session or addressing the user, confirm a terminal stop condition holds",
+        "Do not stop after a commit, summary, or written handoff",
     ]
     for phrase in required_phrases:
         if phrase not in text:
