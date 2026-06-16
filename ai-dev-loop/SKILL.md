@@ -1,6 +1,6 @@
 ---
 name: ai-dev-loop
-version: 1.4.0
+version: 1.4.1
 scripts: [scripts/install-ai-dev-loop-template.py, scripts/validate-ai-dev-loop-package.py]
 references: [README.md, REFERENCE.md]
 ---
@@ -25,7 +25,7 @@ Most restrictive wins: unresolved required fixes or unresolved K questions/objec
 - Respect `status.md` scope. Continue the current loop until R has no required follow-up. Current-issue lock: K must finish, block, or obtain written R/human risk acceptance for every current R-required finding before starting any next item, refactor, cleanup, or opportunistic implementation.
 - Do not ask humans for ordinary engineering choices when repo context is enough. K can ask R for clarification or object to a requirement/finding that is unclear, inconsistent, unsupported, unsafe, or likely wrong. K records evidence, risk, proposed safe path, and whether safe partial progress exists.
 - Open required findings ledger: `status.md` carries all unresolved required findings until R closes them or records accepted risk. R must carry forward unresolved findings; K must address all open required findings listed in status, not only the latest review.
-- R must inspect diffs, files, docs, tests, and status; K's response alone does not prove resolution. K must not mark findings resolved without evidence.
+- R must inspect diffs, files, docs, tests, and status; K's response alone does not prove resolution. K must not mark findings resolved without evidence. Final confirmation is R-owned: a K response can request review but can never be terminal approval.
 - Documentation consistency is a hard gate: behavior/API/CLI/config/data/workflow/validation/packaging/user-visible changes require affected docs/specs/examples/install/quickstart/reference updates or no-doc rationale. R findings define required outcomes, not complete K task checklists. K must scan for directly related fallout and fix docs, examples, tests, validators, scripts, packaging notes, and status templates even when R did not name those files. R must verify code-doc-test consistency with file/diff evidence.
 - K resolves spec/doc gaps before code when repo evidence supports a safe update. After R approval, K edits actual repo source directly, not detached artifacts/shadow trees unless required. K must address current R-required issues before any new implementation. Scope-change freeze: no unrelated behavior, broad refactors, dependencies, formatting churn, or cleanup; record adjacent work as future findings/decisions.
 - Prefer small focused commits; avoid mixed commits combining unrelated review, spec, and code changes.
@@ -49,7 +49,7 @@ When git is available:
 - Check `git status --short` and branch before changes; distinguish pre-existing from own changes.
 - Never discard, overwrite, stage, commit, reset, clean, amend, or rebase user changes unless asked; work around unrelated dirty files and record the constraint.
 - Every completed R turn must commit its R review and `status.md` update.
-- Every completed K turn must commit K response, `status.md`, and spec/code/test changes.
+- Every completed K turn must commit K response, `status.md`, and spec/code/test changes, then set `Next Expected Role Action` to R review unless K is blocked awaiting R or human input.
 - Use exact commit-subject prefixes: `R: <review action>` for R, `K: <implementation/response action>` for K.
 - Do not treat a role turn as complete, approved, or ready for handoff until its required commit succeeds or degraded-mode evidence explicitly explains why no commit can exist.
 - Record commit hashes only after commit exists. If the current record/status is being committed with the change, `pending current commit` is valid for that closed historical turn; do not treat it later as missing evidence. If commit fails, write `Commit: not committed: <reason>` and list uncommitted paths in role record and `status.md`.
@@ -83,7 +83,7 @@ Role-local state sources are mandatory: read git status/log/diff, `status.md`, l
 ## Completed Items
 <done items or None>
 ## Next Expected Role Action
-<R action, K action, human action, or Stop>
+<R action, K action, human action, or Stop; Stop only after an R review approves>
 ## Next Item
 <next authorized item or None>
 ## Blockers
@@ -146,7 +146,7 @@ K writes `.ai-dev-loop/responses/NNNN-k-response.md`:
 ## Compact Context
 ## Next Expected R Action
 ```
-K must not mark findings resolved without evidence. K answers every open R-required finding from latest review and `status.md` before next roadmap item/refactor/cleanup/unrelated implementation. Changed behavior requires docs/specs/examples/install/quickstart/reference updates or `Documentation Updates: Not needed because <evidence>`. K runs a whole-change impact scan against docs/specs/examples/tests/validators/scripts/package guidance. If any item is unresolved, unvalidated, unclear, objected, or missing evidence, set `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None`. Then ask R, object, or block with disputed requirement, evidence, risk, safe path, and possible partial progress.
+K responses are never final approval. After K changes, `## Next Expected R Action` and `status.md` must request R review unless K is blocked and records the blocker. K must not mark findings resolved without evidence. K answers every open R-required finding from latest review and `status.md` before next roadmap item/refactor/cleanup/unrelated implementation. Changed behavior requires docs/specs/examples/install/quickstart/reference updates or `Documentation Updates: Not needed because <evidence>`. K runs a whole-change impact scan against docs/specs/examples/tests/validators/scripts/package guidance. If any item is unresolved, unvalidated, unclear, objected, or missing evidence, set `Overall Status: Changes requested` or `Blocked` and keep `Next Item: None`. Then ask R, object, or block with disputed requirement, evidence, risk, safe path, and possible partial progress.
 
 ## Context compression
 Use `.ai-dev-loop/context/NNNN-context.md` when context is long, stale, near handoff, or may exceed memory. Preserve focus/scope, status, findings, blockers, decisions, changed paths, commits, validation, next action. Never remove open findings, blockers, validation limits, human constraints, changed paths, commits, approval status.
@@ -177,7 +177,7 @@ R/K resolve ordinary ambiguity from repo evidence first. K can update low-risk s
 3. **Impl review**: R reviews diffs/tests/status. R requests changes, approves with notes, approves, or blocks.
 4. **Continuation**: Continue only within explicitly authorized scope.
 
-Loop ends only when R records `Approved`, or `Approved with notes` with no required K follow-up. If R records `Blocked`/`Changes requested`, or K records an unresolved clarification/objection, resolve that gate before next implementation. Do not proceed by roadmap order, convenience, or partial fixes. Trigger blocker when: same finding fails after 3 K attempts; R/K disagree twice on intent/risk/external context; 2 rounds make no material change; or item exceeds 6 R/K rounds. Write/commit blocker, mark `Blocked`, stop.
+Loop ends only when R records `Approved`, or `Approved with notes` with no required K follow-up. A K response must not set `Next Expected Role Action: Stop`, `Overall Status: Approved`, or any terminal approval state; K hands off to R for final review. If R records `Blocked`/`Changes requested`, or K records an unresolved clarification/objection, resolve that gate before next implementation. Do not proceed by roadmap order, convenience, or partial fixes. Trigger blocker when: same finding fails after 3 K attempts; R/K disagree twice on intent/risk/external context; 2 rounds make no material change; or item exceeds 6 R/K rounds. Write/commit blocker, mark `Blocked`, stop.
 
 ## Gates
 Before any role turn is complete:
@@ -187,7 +187,7 @@ Before any role turn is complete:
 - Specs, documentation, examples, tests, and implementation agree; required findings are resolved with evidence, blocked, or accepted as risk by R/human.
 - Tests are added/updated for changed behavior where practical; validation commands/results are recorded; documentation updates or no-doc rationale are recorded.
 - Implementation edits are in the real repository working tree, not only detached artifacts/copies.
-- `status.md` is synchronized with latest files and approval state.
+- `status.md` is synchronized with latest files and approval state; terminal `Stop` or final approval appears only after an R review, never directly after a K response.
 - Required commits exist when git is available; hashes are recorded only when real.
 - No unrelated user changes were overwritten, staged, or committed.
 - Degraded mode limitations are explicit.

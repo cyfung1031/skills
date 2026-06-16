@@ -5,7 +5,7 @@
 This package contains a **tool-agnostic AI Development Loop** for software projects. It defines a durable two-role workflow:
 
 - **R — Reviewer/Auditor** reviews specifications, plans, implementation, risks, and evidence.
-- **K — Implementer/Keeper** responds to R, performs whole-change impact scans, updates all directly affected specs/docs/examples/code/tests/harness artifacts in the real repository, validates changes, and records evidence.
+- **K — Implementer/Keeper** responds to R, performs whole-change impact scans, updates all directly affected specs/docs/examples/code/tests/harness artifacts in the real repository, validates changes, records evidence, and hands back to R for terminal review.
 
 The package is designed for any comparable repository-editing coding assistant. Named tools are only adapter examples; the workflow itself does not depend on a vendor-specific command, directory, or UI feature.
 
@@ -334,7 +334,9 @@ mkdir -p .ai-dev-loop/{reviews,responses,context,decisions}
 
 Then ask your agent to start as R using the quick-start prompt above.
 
-## v1.4.0 Patch Notes
+## v1.4.1 Patch Notes
+
+- Adds a terminal R review gate: K responses cannot be final approval, and R must verify implementation/documentation/validation evidence before `Stop`.
 
 - Replaced backtracking-prone review/response block extraction with line-by-line parsing in `scripts/validate-ai-dev-loop-package.py`.
 - Normalized Markdown-decorated status option lists before vocabulary comparison.
@@ -354,20 +356,20 @@ Then ask your agent to start as R using the quick-start prompt above.
 - Tightened version-consistency regex in validator to exclude dependency-pin comparators (`>=`, `<=`, `!=`, `==`, `~=`, `>`, `<`), avoiding false positives on non-version numeric strings.
 - Removed vendor-specific `/home/oai` entry from installer `BROAD_DIRS`; `Path.home()` already covers all user home directories.
 
-## v1.4.0 Maintenance Notes
+## v1.4.1 Maintenance Notes
 
 - Keeps the compact `SKILL.md` and optional `REFERENCE.md` structure.
 - Preserves durable R/K separation, evidence-first reviews, status synchronization, git discipline, and degraded-mode honesty.
 - Keeps conservative token-efficiency guidance while sizing `SKILL.md` budgets with modest maintenance headroom instead of near-zero slack.
 - Keeps provider-neutral byte, line, word, structure, status, template, and packaging checks.
 - Uses the documented clean root zip layout with no wrapper directory.
-- Updates the canonical K template from `Remaining Questions` to `Clarifications or Objections`; existing older records remain readable, while new records use the v1.4.0 heading.
+- Updates the canonical K template from `Remaining Questions` to `Clarifications or Objections`; existing older records remain readable, while new records use the v1.4.1 heading.
 - Applies workflow fixes for unclear requirements and justified K objections while preserving auditability, status synchronization, and `SKILL.md` size headroom.
 
 ## Version
 
-**Version**: 1.4.0
-**Last Updated**: 2026-06-14
+**Version**: 1.4.1
+**Last Updated**: 2026-06-16
 
 
 ## Commit-hash timing

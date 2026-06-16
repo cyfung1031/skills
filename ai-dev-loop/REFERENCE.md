@@ -89,7 +89,7 @@ Do not invent additional approval states. When a review covers both planning and
 2. **Markdown-based handoff**
    - R records every review, audit, concern, clarification request, and final approval in markdown.
    - K records every response, decision, spec update, implementation update, and test result in markdown.
-   - **Every role turn must write markdown.** An R turn is complete when the R review and synchronized status update are written and committed when git is available. A K turn is complete when the K response, any repository changes, and synchronized status update are written and committed when git is available. A full review-response cycle is complete only when required R and K records both exist, except when R records final approval with no required K follow-up.
+   - **Every role turn must write markdown.** An R turn is complete when the R review and synchronized status update are written and committed when git is available. A K turn is complete when the K response, any repository changes, and synchronized status update are written and committed when git is available; K must then request R review unless blocked. A K response is never terminal approval. A full review-response cycle is complete only when required R and K records both exist, except when R records final approval with no required K follow-up.
    - Markdown files are the durable conversation between R and K.
 
 3. **Role-local context, not chat-memory context**
@@ -733,7 +733,7 @@ A status file cannot always know the hash of the commit that is about to introdu
 
 ## Loop Termination Criteria
 
-A review-response loop ends only when R records:
+K responses may request review, document blockers, or ask questions but are never terminal approval. A review-response loop ends only when R records:
 
 ```text
 Overall Status: Approved
@@ -983,13 +983,18 @@ Proceed through review, response, implementation, and follow-up loops by resolvi
 
 Always leave the repository in a traceable state with committed local history for every completed R or K action, using `R:` and `K:` commit subjects; otherwise record the commit limitation and exact uncommitted paths.
 
-## v1.4.0 Validator and Installer Hardening
+## v1.4.1 Validator and Installer Hardening
 
 - Parse R finding blocks and K response blocks line-by-line. Do not use full-document `.*?` or `[\s\S]*?` lookahead regexes for Markdown block extraction. This keeps validation linear in input size and avoids ReDoS-style backtracking on malformed headings.
 - Normalize status option-list vocabulary before comparison: remove common Markdown decoration, strip label prefixes, split on `|`, trim each item, and compare sets of values. Keep separate canonical status-value validation for actual record state.
 - Wrap installer template writes with local `PermissionError` and `OSError` handling. Report permission or file-lock causes with actionable messages instead of raw tracebacks.
 
-## v1.4.0 Token-Efficiency and Packaging Notes
+
+## v1.4.1 Terminal R Review Gate
+
+K responses are implementation evidence, not final approval. After any K response that makes changes, K must request R review via `status.md`. R must inspect the implementation and documentation evidence before recording `Approved`, `Approved with notes`, or `Stop`.
+
+## v1.4.1 Token-Efficiency and Packaging Notes
 
 This revision keeps durable R/K separation, open-finding carry-forward, code-doc-test consistency checks, evidence-first reviews, synchronized status, git discipline, degraded-mode honesty, and optional reference material. It also fixes the prior validation/package mismatch:
 

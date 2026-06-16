@@ -714,6 +714,8 @@ def validate_compact_skill(root_skill: Path, root: Path, errors: list[str]) -> N
         "R findings define required outcomes, not complete K task checklists",
         "docs/specs/examples/tests/validators/scripts/package guidance",
         "not only literal R bullet items or requested files",
+        "K responses are never final approval",
+        "terminal `Stop` or final approval appears only after an R review",
     ]
     for phrase in required_phrases:
         if phrase not in text:

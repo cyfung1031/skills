@@ -7,9 +7,9 @@ The **AI Development Loop** is a tool-agnostic workflow for AI-assisted software
 - **R — Reviewer/Auditor**, who audits specs, plans, implementation, risks, and evidence.
 - **K — Implementer/Keeper**, who responds to R, performs whole-change impact scans, updates specs/docs/examples/tests/harness artifacts, modifies the real repository, validates changes, and records evidence.
 
-The loop is intentionally generic. v1.4.0 keeps open-finding carry-forward and code-doc-test consistency gates. It also adds explicit clarification/objection gates: K can ask R about unclear requirements or challenge questionable findings with evidence. Any comparable assistant can use it when the assistant can read and edit a repository, run commands, and maintain local git history. Named tools are only adapter examples, not requirements.
+The loop is intentionally generic. v1.4.1 keeps open-finding carry-forward and code-doc-test consistency gates. It also adds explicit clarification/objection gates: K can ask R about unclear requirements or challenge questionable findings with evidence. Any comparable assistant can use it when the assistant can read and edit a repository, run commands, and maintain local git history. Named tools are only adapter examples, not requirements.
 
-Unresolved K questions or objections are not advisory chatter; they are loop gates. R must answer, revise, uphold with evidence, or accept risk before expecting further K implementation. R findings are not a task checklist for K; implementation updates must include all directly related documentation, example, validation, installer, package, and status-template consistency fixes, including affected files R did not explicitly mention.
+Unresolved K questions or objections are not advisory chatter; they are loop gates. K responses are also not terminal approval: after K responds, R must review the evidence before the loop can stop. R must answer, revise, uphold with evidence, or accept risk before expecting further K implementation. R findings are not a task checklist for K; implementation updates must include all directly related documentation, example, validation, installer, package, and status-template consistency fixes, including affected files R did not explicitly mention.
 
 The only hard requirements are:
 
@@ -23,7 +23,7 @@ When a record and `status.md` are committed together, `pending current commit` i
 
 ## Safe extraction rule
 
-Extract the zip into a new empty staging directory first, then copy or install only the intended files into the project root. The v1.4.0 zip uses a clean root layout with no wrapper directory and no root `.ai-dev-loop/` template folder, so staging prevents accidental mixing with unrelated workspace files.
+Extract the zip into a new empty staging directory first, then copy or install only the intended files into the project root. The v1.4.1 zip uses a clean root layout with no wrapper directory and no root `.ai-dev-loop/` template folder, so staging prevents accidental mixing with unrelated workspace files.
 
 ## Fastest Safe Install
 
@@ -279,8 +279,8 @@ K must document the exact command, result, likely cause, whether the failure is 
 
 ## Version
 
-**Version**: 1.4.0
-**Last Updated**: 2026-06-14
+**Version**: 1.4.1
+**Last Updated**: 2026-06-16
 
 ## Git Bootstrap Default
 

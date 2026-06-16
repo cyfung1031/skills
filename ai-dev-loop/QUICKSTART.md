@@ -101,6 +101,10 @@ K must not blindly implement an unclear or questionable R request. R is not a co
 
 When K implements, K must include directly related artifact fixes discovered by the whole-change impact scan. Examples include stale docs, examples, validators, installer text, or package notes, even when R gave only an outcome and not a file-by-file task list.
 
+## Terminal review rule
+
+Do not stop after a K response. K must set the next action to R review unless blocked. R must inspect implementation, documentation, validation evidence, and open-finding closure before recording final approval or `Stop`.
+
 ## 4. Validate a package revision
 
 ```bash
@@ -109,9 +113,9 @@ python3 scripts/validate-ai-dev-loop-package.py
 
 ## Version
 
-## v1.4.0 Script Hardening Note
+## v1.4.1 Script Hardening Note
 
 The package validator uses line-by-line Markdown block parsing for review/response records. It does not use global backtracking section regexes for those blocks. Status option-list checks normalize harmless Markdown decorations before comparison. Installer write failures report permission or file-lock diagnostics instead of raw tracebacks.
 
-**Version**: 1.4.0
-**Last Updated**: 2026-06-14
+**Version**: 1.4.1
+**Last Updated**: 2026-06-16
