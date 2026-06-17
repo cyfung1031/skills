@@ -1,0 +1,147 @@
+{
+  "package": "ai-dev-loop",
+  "version": "1.7.6",
+  "release_timestamp": "2026-06-18T00:00:00Z",
+  "files": [
+    {
+      "path": "BENCHMARK-HARNESS.md",
+      "bytes": 1782,
+      "sha256": "6aa6fbeaeff3a5112be52cab8c6244f03c9f6f0d35e6adac3e258d9bd55884a0"
+    },
+    {
+      "path": "COMPLETE-PACKAGE-GUIDE.md",
+      "bytes": 4147,
+      "sha256": "13cfcf3c01c07d7ac095bbc380cf6f69fb6c27f744ba620c065e9e42113fa657"
+    },
+    {
+      "path": "INSTALLATION.md",
+      "bytes": 3904,
+      "sha256": "941ff22dda906fdaabf6b6458908bc642678c05d2b9fa03f776a3276ac911b0b"
+    },
+    {
+      "path": "LOOP-HARNESS.md",
+      "bytes": 14894,
+      "sha256": "392c34a2020ec667fdcd8f9546be26bba6fc13ab6d21bacb57701b6eb2164f34"
+    },
+    {
+      "path": "MODE-HARNESS.md",
+      "bytes": 2304,
+      "sha256": "a5694c93528e18882fd902aa4002ba9edf39b8496083d384c618438fae209af0"
+    },
+    {
+      "path": "PACKAGE-MANIFEST.json",
+      "bytes": null,
+      "sha256": null
+    },
+    {
+      "path": "QUICKSTART.md",
+      "bytes": 2402,
+      "sha256": "731e0559da4efdadedb672ad2c8e6bdfb1b9b90f6d3f326cdbf46ce6e4f8432d"
+    },
+    {
+      "path": "README.md",
+      "bytes": 4833,
+      "sha256": "100628bae5cb68db8357eed77cf9a8bf876f169b3992088957002daf3993b05b"
+    },
+    {
+      "path": "RESTRICTION-HARNESS.md",
+      "bytes": 4915,
+      "sha256": "44202f14571d0573db9ed689ce02712814151d6f145101c601df3608e2babd4a"
+    },
+    {
+      "path": "SCORING-EVIDENCE-SCHEMA.json",
+      "bytes": 2632,
+      "sha256": "0b256486cdd92a9b198601df750581ec039f1a92b51f5734090fac46a9225d77"
+    },
+    {
+      "path": "SKILL.md",
+      "bytes": 9149,
+      "sha256": "d542d629bcd89a679f0f7732f9afbf24d31f1e61e519b55b7d077085f0da0ebd"
+    },
+    {
+      "path": "VALIDATION-RESULTS.md",
+      "bytes": 1390,
+      "sha256": "32047c2d60e03d82ad17cfd40949b4d64117ea1499a3bda2cb244688838696b9"
+    },
+    {
+      "path": "VALIDATION.md",
+      "bytes": 3139,
+      "sha256": "dad4ce1f640ff45575d730a24a0de558da463f9c9596c86a27e8402a59025447"
+    },
+    {
+      "path": "examples/.ai-dev-loop/README.md",
+      "bytes": 4261,
+      "sha256": "c7eb719e3969a09efcafa2f8f8ff163131dbe19a20327595fef5eeb0b6bd3b6a"
+    },
+    {
+      "path": "examples/.ai-dev-loop/context/0001-release-readiness-handoff.md",
+      "bytes": 2002,
+      "sha256": "cc62a996fe97f3c09d2a40f4895ba7bcea011abe674d3b43598409c5e7812179"
+    },
+    {
+      "path": "examples/.ai-dev-loop/context/0002-failed-validation-correction-audit.md",
+      "bytes": 1483,
+      "sha256": "81bd1140080e9ff2429004b8d7ddbcede38fbe38ecba2ae88e9ad13f30534e34"
+    },
+    {
+      "path": "examples/.ai-dev-loop/context/README.md",
+      "bytes": 722,
+      "sha256": "8184ee665e7a327648056e89707b86599d38ebde2ee4829e9e22a094c2783580"
+    },
+    {
+      "path": "examples/.ai-dev-loop/decisions/0001-release-validation-gate.md",
+      "bytes": 2820,
+      "sha256": "bf6a5a3d16ec17c6daceea889e27ae9b4f7a763d377a0bfaf3a56d644e2fb1ca"
+    },
+    {
+      "path": "examples/.ai-dev-loop/decisions/README.md",
+      "bytes": 651,
+      "sha256": "dfca773d5ed925cb21e09afb77bd15e55b5c6ad37b104e126dcbbb25417cd2fc"
+    },
+    {
+      "path": "examples/.ai-dev-loop/responses/0001-k-validation-response.md",
+      "bytes": 5039,
+      "sha256": "e5c76971fce78673a7043df574767e2c8ac0aada40dac0cb7b4099bafbc94cf2"
+    },
+    {
+      "path": "examples/.ai-dev-loop/reviews/0001-r-bootstrap-review.md",
+      "bytes": 4152,
+      "sha256": "d951a141a4620d20af13e7df74375585e00d20c34a64de60d35de8035ca2b203"
+    },
+    {
+      "path": "examples/.ai-dev-loop/reviews/0002-r-terminal-review.md",
+      "bytes": 3993,
+      "sha256": "c6e182f67009220083c21085d7f766c0feee33a179021f4dad51f4bfa48c98da"
+    },
+    {
+      "path": "examples/.ai-dev-loop/status.md",
+      "bytes": 2351,
+      "sha256": "f7e22adccdba4c58251ff12e1db61c3897f1e0128483161998e52b3523fe51be"
+    },
+    {
+      "path": "scripts/check-ai-dev-loop-flow.py",
+      "bytes": 5753,
+      "sha256": "bce1fb1e6c1ff1c02dbb90aaca1ef6450f26a7825f2294b93fc727e9691a83dd"
+    },
+    {
+      "path": "scripts/check-ai-dev-loop-state.py",
+      "bytes": 5159,
+      "sha256": "b44fa837faaa6db62b9218af27312e95ff7b8b79f81c718c1d1cc80ab3003df3"
+    },
+    {
+      "path": "scripts/estimate-ai-dev-loop-token-cost.py",
+      "bytes": 1505,
+      "sha256": "1ec518b66d552e7c0dd91c6702dc23c9d49945bf81ca30a47daeea8283d8ac1e"
+    },
+    {
+      "path": "scripts/install-ai-dev-loop-template.py",
+      "bytes": 10770,
+      "sha256": "910ddcb61e0e37e2e88d951b1118b22545db6b044bd412db5a922a599c73ab95"
+    },
+    {
+      "path": "scripts/validate-ai-dev-loop-package.py",
+      "bytes": 18629,
+      "sha256": "e7929eefc671ad27e4a2fbbff9ee9378e6e331d277d468369438ceb8c71ecdea"
+    }
+  ]
+}

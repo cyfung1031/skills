@@ -1,0 +1,100 @@
+{
+  "schema_name": "ai-dev-loop scoring and evidence schema",
+  "version": "1.7.6",
+  "validation_tiers": {
+    "T0": "source/proposal inspection only",
+    "T1": "deterministic fixtures, static checks, fixture files, or heuristic benchmark",
+    "T2": "live commands, tests, model/API calls, or external lookup with captured outputs",
+    "T3": "qualified independent human/domain review"
+  },
+  "evidence_tags": [
+    "observed",
+    "measured",
+    "inferred",
+    "assumed",
+    "external-cited",
+    "external-unverified",
+    "not-evaluated"
+  ],
+  "score_anchors": {
+    "10": "complete target fit with strong source or measured evidence, observable, reproducible, auditable, and regression-safe",
+    "8": "production-usable with minor disclosed gaps",
+    "6": "partially useful but missing material validation, observability, reproducibility, or compatibility evidence",
+    "4": "weak, ambiguous, wrong-target, hard to execute, or mostly unsupported"
+  },
+  "required_categories": [
+    {
+      "name": "correctness_target_behavior",
+      "weight": 1.25,
+      "production_critical": true
+    },
+    {
+      "name": "scope_user_value_fit",
+      "weight": 1.15,
+      "production_critical": true
+    },
+    {
+      "name": "safety_guardrails_risk_control",
+      "weight": 1.15,
+      "production_critical": true
+    },
+    {
+      "name": "evidence_validation_reproducibility",
+      "weight": 1.2,
+      "production_critical": true
+    },
+    {
+      "name": "observability_audit_handoff",
+      "weight": 1.05,
+      "production_critical": true
+    },
+    {
+      "name": "maintainability_evolvability",
+      "weight": 1.0,
+      "production_critical": true
+    },
+    {
+      "name": "compatibility_regression_safety",
+      "weight": 1.0,
+      "production_critical": true
+    },
+    {
+      "name": "cost_complexity_token_efficiency",
+      "weight": 0.65,
+      "production_critical": false
+    },
+    {
+      "name": "language_audience",
+      "weight": 1.0,
+      "production_critical": "conditional"
+    }
+  ],
+  "score_row_required_fields": [
+    "candidate",
+    "category",
+    "relevance",
+    "score",
+    "evidence_tag",
+    "source_locator",
+    "positive_evidence",
+    "missing_evidence",
+    "confidence",
+    "validation_tier",
+    "cap_applied"
+  ],
+  "comparison_packet_required_files": [
+    "run_manifest.json",
+    "candidate_inventory.csv",
+    "category_map.json",
+    "evidence_ledger.csv",
+    "score_matrix.csv",
+    "revision_log.csv"
+  ],
+  "claim_caps": {
+    "T0": "9.2",
+    "T1": "9.4",
+    "T2": "9.7",
+    "missing_target_map": "8.0",
+    "unresolved_scope_mismatch": "6.5"
+  }
+}

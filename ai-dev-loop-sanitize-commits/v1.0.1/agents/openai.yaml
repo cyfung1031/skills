@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Dev Loop Commit Sanitizer"
+  short_description: "Sanitize local R/K loop commits"
+  default_prompt: "Use $ai-dev-loop-sanitize-commits to clean unpushed R:/K: commits before sharing a branch."

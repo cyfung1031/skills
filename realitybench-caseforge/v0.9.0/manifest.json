@@ -1,0 +1,18 @@
+{
+  "CHANGELOG.md": {
+    "bytes": 567,
+    "sha256": "941b9e54d027996628293248527f64a40aab61940dcf0b34a418644ed9dbf76a"
+  },
+  "README.md": {
+    "bytes": 1143,
+    "sha256": "fb23d9f4dbb093e62722cd87b28421535fc4b7d8ddb6ad0d5f4b1c24f29b5283"
+  },
+  "SKILL.md": {
+    "bytes": 26994,
+    "sha256": "8a03e68f9a5513198d3ef81036ba149fa51b684fbe56f4d65436eb52af21f7e8"
+  },
+  "skill.json": {
+    "bytes": 320,
+    "sha256": "6d2204a20797f8627856608acb99915fd15872b4fa553c62752047d1924913fb"
+  }
+}

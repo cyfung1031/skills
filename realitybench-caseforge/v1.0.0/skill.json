@@ -1,0 +1,6 @@
+{
+  "name": "realitybench-caseforge",
+  "display_name": "RealityBench CaseForge",
+  "version": "1.0.0",
+  "description": "Generates source-grounded, format-fit, first-shot-ready benchmark test cases, including LLM-specific cases, that approximate non-synthesized real-world testing and produce globally differentiated, objectively scoreable evaluation suites with explicit handling for stochasticity, prompt sensitivity, context limits, tool use, safety boundaries, and judge reliability."
+}
