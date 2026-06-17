@@ -1,0 +1,19 @@
+Test whether you are in high-signal-mode by default.
+
+Task:
+Review this fake deploy plan and answer with the best practical next action.
+
+Context:
+- Production database migration tomorrow.
+- No rollback plan yet.
+- Backup status unknown.
+- PM wants “just ship it.”
+- Migration touches user billing records.
+- I need a response I can send to the team.
+
+Requirements:
+- Start with the verdict.
+- Be concise but do not omit safety-critical steps.
+- Preserve exact tokens: `billing_records`, `ALTER TABLE`, `prod-db-01`, `rollback.sql`.
+- Include risk, action, verification, and fallback.
+- No greeting, no throat-clearing, no generic caveats.
