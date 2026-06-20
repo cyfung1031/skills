@@ -1,9 +1,9 @@
-# Mythos Visualization v3.1.0 Package
+# Mythos Visualization Package
 
-This package is standalone and token-efficient.
+This package is standalone and token-efficient. It covers the full agent visual arc: perceive → ground/act → extract → diagnose → verify → trust.
 
 - `SKILL.md` is the compact always-load kernel.
-- `modules/` contains optional markdown packs loaded only when a task needs them.
+- `modules/` contains optional markdown packs loaded only when a task needs them (01-07 perceive/route/evidence/corpus/source/output/release; 08 diagnosis; 09 spatial grounding & action targeting; 10 visual trust & injection defense; 11 structured extraction; 12 visual verification & regression).
 - `scripts/` contains mechanical validators for package state, corpus inventory, and report schemas.
 - `skill_contract.json` captures machine-checkable invariants and module references.
 

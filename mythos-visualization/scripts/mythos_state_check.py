@@ -31,7 +31,6 @@ def main():
     if not data: errors.append('skill_contract.json missing')
     ver=meta.get('version')
     if ver != data.get('version'): errors.append(f'version mismatch: {ver} vs {data.get("version")}')
-    if ver and f'v{ver}' not in text: errors.append(f'title/reference missing v{ver}')
     for term in REQUIRED:
         if term not in text.lower(): errors.append(f'invariant term missing: {term}')
     for mod in data.get('modules',[]):

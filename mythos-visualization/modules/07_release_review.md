@@ -4,7 +4,7 @@ Load this module when improving Mythos Visualization itself or selecting among c
 
 ## Major-version gate
 
-A major release is justified only when it changes structure, loading strategy, validation mechanics, or compatibility boundaries while preserving protected behavior. v3 uses a compact kernel plus optional modules and scripts; that is a structural/token-efficiency change, not a reason to weaken output discipline.
+A major release is justified only when it changes structure, loading strategy, validation mechanics, or compatibility boundaries while preserving protected behavior. This package uses a compact kernel plus optional modules and scripts; such a structural/token-efficiency change is not a reason to weaken output discipline.
 
 ## Target map for successor work
 
@@ -45,7 +45,7 @@ Scores above 9 require positive evidence and no material missing requirement. Re
 
 Before release, verify:
 
-- YAML version equals title/version references.
+- YAML version equals `skill_contract.json` version.
 - Module paths exist and are referenced.
 - Protected invariants exist in `SKILL.md`.
 - Optional modules are not required for direct answers.
