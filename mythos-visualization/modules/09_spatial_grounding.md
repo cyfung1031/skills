@@ -9,7 +9,7 @@ A coordinate is meaningless without its frame. Pin all four before acting:
 1. **Origin & axes**: top-left `(0,0)`, x→right, y→down unless the tool says otherwise.
 2. **Unit**: CSS/logical pixels vs device pixels. `device_px = css_px × devicePixelRatio`. A 2× display doubles raster coordinates — a frequent off-by-2× miss.
 3. **Reference rect**: full screen, the app window, the browser viewport, or the captured image. A screenshot may be a crop or a single window, not the whole screen — its `(0,0)` is the crop's corner.
-4. **Scale factor**: `actual_px = reported_px × (native_dimension / displayed_dimension)`. If the screenshot was downscaled, every coordinate must be rescaled back.
+4. **Scale factor**: `actual_px = reported_px × (native_dimension / displayed_dimension)`. If the screenshot was downscaled, every coordinate must be rescaled back. `scripts/mythos_layout_check.py --transform` does this frame/DPR/normalize math deterministically; `scripts/mythos_image_meta.py` measures the capture's true dimensions.
 
 Emit targets as both a **normalized** fraction `(x/W, y/H)` and an **absolute** pixel pair so a frame mismatch is recoverable. Normalized survives rescaling; absolute is what most tools consume.
 

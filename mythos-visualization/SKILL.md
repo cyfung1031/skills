@@ -1,7 +1,7 @@
 ---
 name: mythos-visualization
-version: 3.3.0
-description: Standalone, token-efficient visual skill spanning the full agent arc — perceive, ground/act, extract, diagnose, verify, and trust — for images, screenshots, source-backed graphics, visual systems, and visual corpora. A compact always-load kernel routes to on-demand modules for modes/lenses, evidence, domain lenses, corpus, source/render/runtime, output contracts, release review, diagnosis, spatial grounding/action targeting, visual trust/injection defense, structured extraction, and visual verification, plus optional Python state checks.
+version: 3.6.0
+description: Standalone, token-efficient visual skill spanning the full agent arc — perceive, ground/act, extract, diagnose, link-to-code, verify, and trust — for images, screenshots, source-backed graphics, visual systems, and visual corpora. A compact always-load kernel routes to on-demand modules for modes/lenses, evidence, domain lenses, corpus, source/render/runtime, output contracts, release review, diagnosis, spatial grounding/action targeting, visual trust/injection defense, structured extraction, visual verification, quality/value appraisal, and visual-to-code linking (capture-constrained, one-shot), plus optional Python state, measurement, and source-locator scripts.
 last_updated: 2026-06-20
 module_strategy: compact_kernel_plus_on_demand_modules
 standalone_package: true
@@ -32,11 +32,12 @@ Protected behavior that must not regress:
 9. Preserve exact paths, labels, code snippets, visible text, units, colors, coordinates, and IDs when they matter.
 10. State validation run/not-run only for checks actually performed.
 11. When diagnosing a defect: anchor an **expected** baseline, attribute each cause to its evidence layer (source/render/runtime/data/env), and name the one discriminating check before proposing a fix — never guess a cause by trial-and-error.
+12. When linking a visual to code or fixing without re-rendering: locate the source from visible cues, change the **winning** declaration, predict appearance statically as `inferred`, and verify via deterministic/non-visual checks — never claim rendered confirmation without a render, and request at most one decisive capture rather than iterating.
 
 ## Routing algorithm
 
 1. Identify the artifact: type, visual class, source availability, and whether it is a single visual, sequence, source-backed render, or corpus.
-2. Identify the user's task: caption, analysis, critique, **structured extraction**, comparison, reconstruction, implementation guidance, **defect diagnosis (screenshot/render → root cause)**, **acting on the visual (click/drag/locate)**, **visual verification/regression**, corpus report, or release audit. Capability arc, each with an on-demand module: perceive → ground/act → extract → diagnose → verify → trust.
+2. Identify the user's task: caption, analysis, critique, **structured extraction**, comparison, reconstruction, implementation guidance, **defect diagnosis (screenshot/render → root cause)**, **acting on the visual (click/drag/locate)**, **visual verification/regression**, **linking a visual to its source code / fixing from a screenshot without re-rendering**, corpus report, or release audit. Capability arc, each with an on-demand module: perceive → ground/act → extract → diagnose → link-to-code → verify → trust.
 3. Choose the smallest mode: Ultra-Compact, Tiny, Quick, Compressed Standard, Standard, Forensic, or Corpus/Release profile.
 4. Choose one dominant lens: UI/product, chart/data, map/spatial, diagram/system, photo/scene, creature/object, artwork/style, meme/social, abstract/formal, scientific/industrial, source-backed graphic, motion/video, or mixed-corpus.
 5. Add only supporting lenses that materially change the answer.
@@ -76,6 +77,7 @@ For source-backed visuals, keep the layers separate: static source facts support
 - Refuse or redirect only when the visual task would require unsafe instructions, privacy-invasive identification, unsupported diagnosis/compliance certification, or other disallowed help.
 - For ambiguous visuals, give the best bounded reading and the uncertainty source instead of forcing a single identity.
 - For high-stakes domains, describe visible features and limits; do not diagnose, certify, optimize operations, or assert legal/scientific truth from appearance alone.
+- Appraise quality only against a stated purpose and criteria with evidence per judgment; never assert monetary value, authenticity, or provenance from appearance — those need cited market data or expert authentication (detail: `modules/13_visual_appraisal.md`).
 - For protected or exact content, preserve code, logs, labels, paths, IDs, visible text, numbers, units, and user-provided constraints unless asked to transform them.
 - If evidence is unavailable, answer from available layers and say what would be needed to verify the missing layer.
 
@@ -87,6 +89,7 @@ For source-backed visuals, keep the layers separate: static source facts support
 - Artwork/meme/abstract: visible subject/form; style/mood; plausible reading; ambiguity; no definitive intent.
 - Source-backed file: static facts; probable visual role; what render/runtime/accessibility would verify.
 - Defect diagnosis: localized expected-vs-actual delta; causes ranked and tagged by evidence layer; one discriminating check; root cause + fix + confirmation (catalog/schema: `modules/08_visual_diagnosis.md`).
+- Appraisal: purpose/standard; rubric + weights; per-criterion score with evidence; anchored verdict; strengths/improvements; value/authenticity never from pixels (rubric/schema: `modules/13_visual_appraisal.md`).
 - Corpus/release: inventory; routing/confidence; coverage depth; sample reports; patterns; validation log; checksums.
 
 ## Handoff and audit discipline
@@ -111,10 +114,12 @@ This `SKILL.md` is the always-load kernel. Load optional modules only when the t
 | Untrusted/adversarial visuals: in-image instruction injection, UI spoofing, edit/deception cues, secret redaction, safety boundaries | `modules/10_visual_trust.md` |
 | Extract structured content: tables, forms, receipts, documents, code/log screenshots, reading order, OCR tiers, cell/field integrity | `modules/11_structured_extraction.md` |
 | Verify/regression-test a visual outcome: prove a fix, before/after gating, state/flake control, visual-diff tolerance | `modules/12_visual_verification.md` |
+| Appraise quality/craft/design/effectiveness or compare-and-rank visuals: rubrics, anchored scoring, comparative ranking, value/authenticity boundary | `modules/13_visual_appraisal.md` |
+| Link a visual to the source that produces it, or fix from a screenshot without re-rendering (capture-constrained, one-shot): cue→source locating, static appearance prediction, capture-free verification | `modules/14_visual_code_linking.md` |
 
 ## Mechanical state checks
 
-Use Python only for mechanical state where it materially improves reliability (package/release work, corpus inventory, checksum/index matching, report schema validation, route summaries, score matrices, metadata/header consistency). Do not use scripts to invent visual interpretations. Bundled: `scripts/mythos_state_check.py` (package/version/module/invariant/token/checksum validation), `scripts/mythos_corpus_probe.py` (corpus inventory + D0/D1 artifacts), `scripts/mythos_report_lint.py` (per-sample report schema/coverage). Smoke commands are in `README.md`.
+Use Python only for mechanical state where it materially improves reliability (package/release work, corpus inventory, checksum/index matching, report schema validation, route summaries, score matrices, metadata/header consistency). Do not use scripts to invent visual interpretations. Bundled: `scripts/mythos_state_check.py` (package/version/module/invariant/token/checksum validation), `scripts/mythos_corpus_probe.py` (corpus inventory + D0/D1 artifacts), `scripts/mythos_report_lint.py` (per-sample report schema/coverage), `scripts/mythos_appraisal_score.py` (weighted-rubric appraisal aggregation with evidence/inflation guards and score matrix), `scripts/mythos_image_meta.py` (pure-stdlib format/dimension/aspect/DPI/animation parse + fitness flags), `scripts/mythos_contrast.py` (WCAG contrast/luminance + hue-harmony from known colors), `scripts/mythos_layout_check.py` (bounding-box alignment/spacing/overlap/off-canvas/hit-size + coordinate/DPR transforms), `scripts/mythos_source_locator.py` (grep-rank source files from visible cues — text/color/token/size — to link a visual to its code without rendering). These turn `inferred`/`not-verified` aspect claims into `measured` where inputs allow; they measure or locate, they do not judge or prove rendering. Smoke commands are in `README.md`.
 
 ## Tiny self-audit
 

@@ -4,7 +4,7 @@ Load this module to **prove** a visual outcome: confirm a UI change works, valid
 
 ## Verification ladder (climb to the height the claim needs)
 
-- **V0 source** — the change exists in source. Necessary, never sufficient for a visual claim.
+- **V0 source** — the change exists in source. Necessary, never sufficient for a visual claim. When re-capture is disallowed, this is the floor; raise it with the deterministic non-visual checks in Module 14's capture-free verification path (winning-rule confirmation, contrast/layout/meta scripts, type-check/build, existing snapshot tests) rather than re-screenshotting.
 - **V1 static/build** — it compiles, the asset/style is referenced, the selector matches. Still not visual proof.
 - **V2 rendered observation** — capture the actual rendered state and observe the expected appearance. **Minimum tier to claim a visual fix works** (maps to InsightForge T2 / verification-discipline "it behaves").
 - **V3 measured/regression** — pixel/measurement comparison, contrast/measure values, or a baseline diff across a set.

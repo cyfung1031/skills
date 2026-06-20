@@ -56,11 +56,13 @@ Map the visual symptom to its likely cause cluster and the cheapest discriminati
 
 When the symptom is not in the catalog, still produce: localized delta → ranked layered hypotheses → discriminating check.
 
+When re-capturing is not allowed, the discriminating check shifts to static source evidence — locate the responsible code from visible cues and inspect the winning rule (Module 14) — rather than a fresh screenshot.
+
 ## Evidence-layer discipline for diagnosis
 
 A screenshot alone proves only rendered-pixel facts. Cause attribution to source/runtime/data is **inferred** until the corresponding layer is checked (Module 05). State which layer each hypothesis needs and whether you inspected it. Do not assert "the CSS does X" or "the JS fails" from a screenshot alone — mark it inferred and name the check.
 
-When tooling is available (DOM/accessibility inspector, console, network, computed styles, second screenshot at another state/size, source grep), prefer the one check that is decisive over describing many possibilities.
+When tooling is available (DOM/accessibility inspector, console, network, computed styles, second screenshot at another state/size, source grep), prefer the one check that is decisive over describing many possibilities. When box coordinates or colors are known, `scripts/mythos_layout_check.py` confirms overlap/clipping/off-canvas/misalignment and `scripts/mythos_contrast.py` confirms a contrast/theme defect deterministically.
 
 ## Comparison diagnosis (design-vs-build, before-vs-after, regression)
 

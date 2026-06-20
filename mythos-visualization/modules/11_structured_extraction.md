@@ -8,6 +8,8 @@ Load this module to extract structured content from a visual: tables, forms, rec
 - **OCR/measured**: deterministic OCR or tool output actually run → `measured`.
 - **Visual read**: read by eye from pixels → `observed` for clear glyphs, drop to **approximate** for small/blurred, **unavailable** when guessing (Module 02 exactness ladder).
 
+Check resolution adequacy before trusting a fine read: `scripts/mythos_image_meta.py` measures true dimensions/DPI, and a `very-small`/`below-target` flag predicts unreliable glyph extraction.
+
 Never present a visual read as if OCR-verified. Flag low-confidence characters (`0/O`, `1/l/I`, `5/S`, `rn/m`, decimal vs thousands separators, trailing zeros) explicitly.
 
 ## Table integrity

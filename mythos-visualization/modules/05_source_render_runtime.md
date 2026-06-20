@@ -26,4 +26,4 @@ SVG markup can support some shape/color/coordinate facts, but actual appearance 
 
 ## Accessibility
 
-A screenshot can show potential risks such as small text, low contrast, missing visible focus, dense layout, or icon-only controls. It cannot verify compliance, focus order, labels, keyboard reachability, or screen-reader output without tools.
+A screenshot can show potential risks such as small text, low contrast, missing visible focus, dense layout, or icon-only controls. It cannot verify compliance, focus order, labels, keyboard reachability, or screen-reader output without tools. When the foreground/background colors are known, `scripts/mythos_contrast.py` returns a measured WCAG ratio and AA/AAA pass — upgrading a contrast claim from `inferred` to `measured`.
