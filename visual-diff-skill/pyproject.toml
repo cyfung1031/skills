@@ -1,0 +1,15 @@
+[project]
+name = "visual-diff-skill"
+version = "0.2.0"
+description = "Agent-ready visual image difference skill with JSON metrics, artifacts, and audit metadata."
+requires-python = ">=3.10"
+dependencies = [
+  "pillow>=10.0.0",
+  "numpy>=1.24.0",
+  "scipy>=1.10.0"
+]
+
+[tool.visual-diff-skill]
+skill_name = "visual-diff-skill"
+skill_version = "0.2.0"
+entrypoint = "visual_diff.py"
